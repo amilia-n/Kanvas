@@ -53,3 +53,57 @@ export async function deleteUser(req, res, next) {
     res.status(204).end();
   } catch (err) { next(err); }
 }
+
+export async function listUserMajors(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const majors = await users.listUserMajors(id);
+    res.json(majors);
+  } catch (err) { next(err); }
+}
+
+export async function addUserMajor(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const { code } = req.body;
+    await users.addUserMajor(id, code);
+    res.status(201).json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+export async function removeUserMajor(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const code = req.params.code;
+    await users.removeUserMajor(id, code);
+    res.status(204).end();
+  } catch (err) { next(err); }
+}
+
+export async function addUserMajorsBulk(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const codes = req.body.codes ?? [];
+    await users.addUserMajorsBulk(id, codes);
+    res.status(201).json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+export async function replaceUserMajors(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const codes = req.body.codes ?? [];
+    await users.replaceUserMajors(id, codes);
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+
+export async function listAllMajors(req, res, next) {
+  try {
+    const majors = await users.listMajors();
+    res.json(majors);
+  } catch (err) {
+    next(err);
+  }
+}
