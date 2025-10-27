@@ -5,12 +5,18 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "start:docker": "docker compose up --build",
+    "start:docker:seed": "docker compose --profile seed up --build",
+    "stop:docker": "docker compose down",
+    "db:init": "bash scripts/db-init.sh",
+    "db:reset": "bash scripts/db-reset.sh",
+    "db:seed": "node src/db/seed.js",
+    "db:init:node": "node src/db/init.js",
+    "db:reset:node": "node src/db/reset.js",
+    "test": "bash scripts/test.sh",
+    "test:run": "vitest run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "argon2": "^0.44.0",
     "cookie-parser": "^1.4.7",
