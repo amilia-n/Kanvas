@@ -154,3 +154,25 @@ export async function searchClassmates(req, res, next) {
     res.json(rows);
   } catch (err) { next(err); }
 }
+
+export async function addOfferingPrereq(req, res, next) {
+  try {
+    const offeringId = Number(req.params.offeringId);
+    const { prereq_offering_id } = req.body;
+    await offerings.addOfferingPrereq(offeringId, prereq_offering_id);
+    res.status(201).json({ message: "Prerequisite added" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function removeOfferingPrereq(req, res, next) {
+  try {
+    const offeringId = Number(req.params.offeringId);
+    const prereqOfferingId = Number(req.params.prereqOfferingId);
+    await offerings.removeOfferingPrereq(offeringId, prereqOfferingId);
+    res.json({ message: "Prerequisite removed" });
+  } catch (err) {
+    next(err);
+  }
+}
