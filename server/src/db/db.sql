@@ -166,3 +166,10 @@ CREATE TABLE IF NOT EXISTS course_materials (
     uploaded_by BIGINT REFERENCES users (id) ON DELETE SET NULL,
     uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- -------------------------
+-- Indexes
+-- -------------------------
+CREATE INDEX IF NOT EXISTS idx_offering_term              ON course_offering (term_id);
+CREATE INDEX IF NOT EXISTS idx_offering_course            ON course_offering (course_id);
+CREATE INDEX IF NOT EXISTS idx_offering_teacher           ON course_offering (teacher_id);
+CREATE INDEX IF NOT EXISTS idx_offering_code_term_section ON course_offering (code, term_id, section);
