@@ -503,3 +503,9 @@ DROP TRIGGER IF EXISTS submissions_recompute_final      ON submissions;
 CREATE TRIGGER submissions_recompute_final
 AFTER UPDATE OF grade_percent ON submissions
 FOR EACH ROW EXECUTE FUNCTION recompute_final_on_grade();
+
+DROP TRIGGER IF EXISTS submissions_require_enrollment   ON submissions;
+CREATE TRIGGER submissions_require_enrollment
+BEFORE INSERT OR UPDATE OF assignment_id, student_id
+ON submissions
+FOR EACH ROW EXECUTE FUNCTION enforce_submission_enrollment();
