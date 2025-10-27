@@ -201,6 +201,23 @@ BEGIN
       CHECK (due_at::date >= assigned_on);
   END IF;
 END $$;
+
+-- -------------------------
+-- Business logic functions
+-- -------------------------
+CREATE OR REPLACE FUNCTION enforce_max3_majors()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE cnt int;
+BEGIN
+  PERFORM 1 FROM users WHERE id = NEW.user_id FOR UPDATE;
+  SELECT COUNT(*) INTO cnt FROM user_majors WHERE user_id = NEW.user_id;
+  IF TG_OP = 'INSERT' THEN
+    IF cnt >= 3 THEN
+      RAISE EXCEPTION 'User % already has 3 majors', NEW.user_id USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
