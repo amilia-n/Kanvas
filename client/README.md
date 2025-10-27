@@ -623,9 +623,14 @@ Mutations automatically invalidate related queries:
 
 ## Styling
 
-### Tailwind CSS v4
+### Tailwind CSS v4 + shadcn/ui
 
-Utility-first CSS framework with custom configuration.
+The application uses **shadcn/ui**, a component system that combines:
+- **Radix UI** - Accessible, unstyled component primitives
+- **Tailwind CSS v4** - Utility-first styling
+- **CSS Variables** - Theme tokens for consistent design
+
+shadcn/ui is not a component library but a collection of reusable components that you own. Components are built with Radix UI and styled with Tailwind, giving you full control and customization.
 
 ### Theme System
 
@@ -646,19 +651,28 @@ Edit `src/styles/shadcn.css` to change theme colors.
 
 ### Component Library
 
-**Radix UI + Custom Styling** - Accessible components with custom designs:
+**shadcn/ui Components** - Built with Radix UI + Tailwind CSS:
 
-- **Button** - Multiple variants (default, outline, ghost, destructive)
+All UI components follow the shadcn/ui pattern and are located in `src/components/ui/`:
+
+- **Button** - Multiple variants (default, outline, ghost, destructive, link)
 - **Card** - Container with header/content/footer sections
 - **Input** - Text input with validation styles
-- **Select** - Dropdown with search
-- **Dialog** - Modal with overlay
-- **Table** - Data table with sorting/filtering
-- **Badge** - Status indicators
+- **Select** - Accessible dropdown with keyboard navigation
+- **Dialog** - Modal dialog with overlay and focus trap
+- **Table** - Semantic table with header/body/footer
+- **Badge** - Status indicators with variants
 - **Alert** - Notification messages
 - **Spinner** - Loading indicator
+- **Label** - Accessible form labels
+- **Separator** - Visual divider
 
-Located in `src/components/ui/`
+**Why shadcn/ui?**
+- Copy and own your components (not a dependency)
+- Full customization control
+- Built on accessible Radix primitives
+- Styled with Tailwind utilities
+- Consistent with modern design systems
 
 ### Responsive Design
 
