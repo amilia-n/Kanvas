@@ -22,6 +22,19 @@ BEGIN
   RETURN NEW;
 END $$;
 
+CREATE OR REPLACE FUNCTION set_waitlisted_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status = 'waitlisted' THEN
+    IF TG_OP='INSERT' OR OLD.status IS DISTINCT FROM 'waitlisted' THEN
+      NEW.waitlisted_at := now();
+    ELSE
+      NEW.waitlisted_at := COALESCE(NEW.waitlisted_at, OLD.waitlisted_at);
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$;
+
 -- -------------------------
 -- Tables
 -- -------------------------
