@@ -24,7 +24,7 @@ services:
       - key: JWT_EXPIRES
         value: 7d
       - key: CORS_ORIGIN
-        value: https://kanvas-app.onrender.com
+        value: https://kanvas.onrender.com
     healthCheckPath: /api/auth/me
 
 databases:
