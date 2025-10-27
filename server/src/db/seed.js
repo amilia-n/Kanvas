@@ -378,6 +378,7 @@ const HIST_ASSIGN_PACK = [
   ["HW 2",   20],
   ["Final",  30],
 ];
+
 async function seedPastAssignmentsForAllOfferings(c) {
   const { rows } = await q(
     c,
@@ -425,7 +426,8 @@ async function getAllPrereqCodes(c){
   return rows.map(r => r.code);
 }
 
-function randomPassing(){ return Math.min(99, 82 + Math.floor(Math.random()*18)); } // 82..99
+function randomPassing(){ return Math.min(99, 82 + Math.floor(Math.random()*18)); } 
+
 async function gradeAllAssignmentsRandomized(c, { offeringId, courseCode, teacherEmail }){
   const teacherId = teacherEmail ? await getUserIdByEmail(c, teacherEmail) : null;
   const a = await q(c, `SELECT id, title, due_at FROM assignments WHERE offering_id=$1 ORDER BY id`, [offeringId]);
@@ -462,6 +464,7 @@ async function gradeAllAssignmentsRandomized(c, { offeringId, courseCode, teache
     }
   }
 }
+
 async function completeEnrollmentsForOffering(c, offeringId, termCode){
   const termId = await getTermId(c, termCode);
   const { rows } = await q(c, `SELECT ends_on FROM terms WHERE id=$1`, [termId]);
@@ -476,6 +479,7 @@ async function completeEnrollmentsForOffering(c, offeringId, termCode){
     [offeringId, endsOn ?? new Date().toISOString().slice(0,10)]
   );
 }
+
 async function backfillAllPrereqHistory(c){
   const codes = await getAllPrereqCodes(c);
   if (!codes.length) return;
@@ -523,4 +527,77 @@ async function backfillAllPrereqHistory(c){
     await completeEnrollmentsForOffering(c, offId, TARGET_PAST_TERM);
     console.log(`[HIST] Backfilled ${code} ${TARGET_PAST_TERM} section ${section}`);
   }
+}
+
+async function seedCurrent(c){
+  for (const cobj of CURRENT){
+    const offeringId = await filterOfferings(c, { code: cobj.code, term: cobj.term, section: cobj.section });
+    if (!offeringId){
+      console.warn(`Skipping ${cobj.code} ${cobj.term} ${cobj.section}: not found`);
+      continue;
+    }
+    await addMaterials(c, offeringId, cobj.teacher_email, cobj.materials);
+    await addAssignments(c, offeringId, cobj.assignments, cobj.term);
+    await enrollStudents(c, offeringId, cobj.students);
+  }
+}
+
+async function seedMockSubmissions(c) {
+  console.log("Creating 5 mock submissions for CS201-L assignments...");
+  
+  const offeringId = await filterOfferings(c, { code: "CS201", term: "FALL25", section: "L" });
+  if (!offeringId) {
+    console.warn("CS201-L not found, skipping mock submissions");
+    return;
+  }
+
+  const { rows: assignments } = await q(
+    c,
+    `SELECT id, title, due_at FROM assignments WHERE offering_id=$1 ORDER BY id`,
+    [offeringId]
+  );
+
+  if (assignments.length === 0) {
+    console.warn("No assignments found for CS201-L");
+    return;
+  }
+
+  const { rows: students } = await q(
+    c,
+    `SELECT e.student_id, u.email, u.first_name, u.last_name
+     FROM enrollments e
+     JOIN users u ON u.id = e.student_id
+     WHERE e.offering_id = $1 AND e.status = 'enrolled'
+     ORDER BY u.last_name
+     LIMIT 5`,
+    [offeringId]
+  );
+
+  if (students.length === 0) {
+    console.warn("No students enrolled in CS201-L");
+    return;
+  }
+
+  let count = 0;
+  for (const assignment of assignments) {
+    for (const student of students) {
+      const handle = student.email.split("@")[0];
+      const url = `https://files.example.com/CS201/${encodeURIComponent(assignment.title)}/${handle}.pdf`;
+      const due = new Date(assignment.due_at);
+      const submittedAt = new Date(due.getTime() - 48 * 60 * 60 * 1000); 
+
+      await q(
+        c,
+        `INSERT INTO submissions (assignment_id, student_id, submission_url, submitted_at)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (assignment_id, student_id) DO NOTHING`,
+        [assignment.id, student.student_id, url, submittedAt.toISOString()]
+      );
+      count++;
+    }
+  }
+
+  console.log(`✓ Created ${count} mock submissions (5 students × ${assignments.length} assignments)`);
+  console.log(`  Students: ${students.map(s => `${s.first_name} ${s.last_name}`).join(", ")}`);
+  console.log(`  Assignments: ${assignments.map(a => a.title).join(", ")}`);
 }
