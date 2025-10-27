@@ -48,3 +48,22 @@ const students = [
   ["Cora","Chan","ccha@kanvas.edu","CS","2025029"],
   ["Don","Diaz","ddia@kanvas.edu","STAT","2025030"],
 ];
+
+const ALL_STUDENT_EMAILS = students.map(s => s[2]);
+
+const CURRENT = [
+
+  {
+    code: "CS201", section: "L", term: "FALL25",
+    teacher_email: "dknu@faculty.kanvas.edu",
+    materials: [
+      ["Syllabus (CS201 FA25)", "https://materials.example.com/cs201/syllabus.pdf"],
+      ["Week 1 Slides — Modeling & Simulation", "https://materials.example.com/cs201/wk1-slides.pdf"],
+    ],
+    students: ALL_STUDENT_EMAILS,
+    assignments: [
+      ["Check-in Quiz", 50],
+      ["Modeling Lab 1", 50],
+    ],
+  },
+];
