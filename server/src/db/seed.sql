@@ -48,3 +48,24 @@ INSERT INTO faculty_registry (email, teacher_number, first_name, last_name, acti
 ('nwir@faculty.kanvas.edu','T-628409','Niklaus','Wirth',TRUE), --MSE
 ('alov@faculty.kanvas.edu','T-639175','Ada','Lovelace',TRUE) --POLS + BCS
 ON CONFLICT (email) DO NOTHING;
+
+-- -----------
+-- Courses 
+-- -----------
+INSERT INTO courses (code, name) VALUES
+  ('CEE',   'Civil & Environmental Engineering'),
+  ('MECH',  'Mechanical Engineering'),
+  ('MSE',   'Materials Science & Engineering'),
+  ('ARCH',  'Architecture'),
+  ('CHEM',  'Chemistry'),
+  ('CS',    'Computer Science'),
+  ('BIOL',  'Biology'),
+  ('PHYS',  'Physics'),
+  ('BCS',   'Brain & Cognitive Sciences'),
+  ('CHEME', 'Chemical Engineering'),
+  ('ECON',  'Economics'),
+  ('AERO',  'Aeronautics & Astronautics'),
+  ('POLS',  'Political Science'),
+  ('MATH',  'Mathematics'),
+  ('BIOE',  'Biological Engineering')
+ON CONFLICT (code) DO NOTHING;
