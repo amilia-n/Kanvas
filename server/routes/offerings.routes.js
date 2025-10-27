@@ -8,4 +8,7 @@ r.post('/', requireAuth, requireRole('admin', 'teacher'), c.createOffering);
 r.patch('/:id', requireAuth, requireRole('admin', 'teacher'), c.updateOffering);
 r.delete('/:id', requireAuth, requireRole('admin', 'teacher'), c.deleteOffering);
 
+r.post('/:offeringId/prereqs', requireAuth, requireRole('admin', 'teacher'), c.addOfferingPrereq);
+r.delete('/:offeringId/prereqs/:prereqOfferingId', requireAuth, requireRole('admin', 'teacher'), c.removeOfferingPrereq);
+
 export default r;
