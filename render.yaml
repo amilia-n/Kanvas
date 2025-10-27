@@ -1,16 +1,15 @@
 services:
+
   - type: web
-    name: kanvas-app
+    name: api
     runtime: node
-    repo: https://github.com/amilia-n/Kanvas
-    buildCommand: |
-      cd server && npm install
-      cd client && npm install && npm run build
-      mkdir -p ./server/public
-      cp -r ./client/dist/* ./server/public/
-    startCommand: cd server && node server.js
+    rootDir: server
     plan: free
     region: oregon
+    buildCommand: npm ci                        
+    preDeployCommand: npm run db:setup:render
+    startCommand: npm run start
+    healthCheckPath: /healthz
     envVars:
       - key: DATABASE_URL
         fromDatabase:
