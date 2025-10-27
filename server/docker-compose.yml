@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kanvas-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: kanvas
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kanvas"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build:
+      context: .
+      args:
+        NODE_VERSION: 20
+    container_name: kanvas-api
+    environment:
+      NODE_ENV: production
+      PORT: 8888
+      # match frontend dev server
+      CORS_ORIGIN: http://localhost:5173
+      # service name "db" resolves via Docker DNS
+      DATABASE_URL: postgres://postgres:mypassword@db:5432/kanvas?sslmode=disable
+      JWT_SECRET: supersecretjwtstring_change_me
+      JWT_EXPIRES: 7d
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8888:8888"
+    restart: unless-stopped
+
+  # One-shot initializer/seed runner - runs when using --profile seed
+  initdb:
+    profiles: ["seed"]
+    build:
+      context: .
+      args:
+        NODE_VERSION: 20
+    container_name: kanvas-initdb
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:mypassword@db:5432/kanvas?sslmode=disable
+      JWT_SECRET: supersecretjwtstring_change_me
+      JWT_EXPIRES: 7d
+    depends_on:
+      db:
+        condition: service_healthy
+    # runs init+seed then exits cleanly
+    command: ["sh", "-c", "echo '🌱 Initializing and seeding database...' && node ./src/db/init.js && node ./src/db/seed.js && echo '✅ Database seeding complete!'"]
+    restart: "no"
+
+volumes:
+  pgdata:
