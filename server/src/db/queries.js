@@ -519,7 +519,43 @@ export const queries = {
   // ======================
   // ELIGIBILITY / PREREQS
   // ======================
-
+  addOfferingPrereq: `
+  INSERT INTO course_prereqs (offering_id, prereq_offering_id)
+  VALUES ($1, $2)
+  ON CONFLICT DO NOTHING;
+`,
+  removeOfferingPrereq: `
+  DELETE FROM course_prereqs 
+  WHERE offering_id = $1 AND prereq_offering_id = $2;
+`,
+  studentHasPassedCourse: `
+    SELECT EXISTS (
+      SELECT 1
+      FROM enrollments e
+      JOIN course_offering co ON co.id = e.offering_id
+      WHERE e.student_id=$1
+        AND co.course_id=$2
+        AND e.status='completed'
+        AND COALESCE(e.final_percent, 0) >= 77
+    ) AS ok;
+  `,
+  allPrereqsMetForOffering: `
+  SELECT NOT EXISTS (
+    SELECT 1
+    FROM course_prereqs cp
+    JOIN course_offering prereq_co ON prereq_co.id = cp.prereq_offering_id
+    WHERE cp.offering_id = $2
+      AND NOT EXISTS (
+        SELECT 1
+        FROM enrollments e
+        JOIN course_offering co ON co.id = e.offering_id
+        WHERE e.student_id = $1
+          AND co.course_id = prereq_co.course_id
+          AND e.status = 'completed'
+          AND COALESCE(e.final_percent, 0) >= 77
+      )
+  ) AS ok;
+`,
   // ============
   // ENROLLMENTS
   // ============
