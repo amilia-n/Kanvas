@@ -653,7 +653,159 @@ export const queries = {
   // =========================
   // ASSIGNMENTS & SUBMISSIONS
   // =========================
-
+  createAssignment: `
+    INSERT INTO assignments (offering_id, title, description, weight_percent, assigned_on, due_at)
+    VALUES ($1, $2, $3, $4, CURRENT_DATE, $5)
+    RETURNING id;
+  `,
+  findAssignment: `
+  SELECT id, offering_id, title, description, weight_percent, assigned_on, due_at, is_open
+  FROM assignments
+  WHERE id = $1;
+`,
+  updateAssignment: `
+  UPDATE assignments
+  SET title        = COALESCE($2, title),
+      description  = COALESCE($3, description),
+      weight_percent = COALESCE($4, weight_percent),
+      due_at       = COALESCE($5, due_at),
+      is_open      = COALESCE($6, is_open),
+      updated_at   = now()
+  WHERE id = $1
+  RETURNING id, offering_id, title, description, weight_percent, assigned_on, due_at, is_open;
+`,
+  teacherIdForAssignment: `
+  SELECT co.teacher_id
+  FROM assignments a
+  JOIN course_offering co ON co.id = a.offering_id
+  WHERE a.id = $1;
+`,
+  deleteAssignment: `DELETE FROM assignments WHERE id = $1;`,
+  setAssignmentOpen: `
+  UPDATE assignments
+  SET is_open = $2, updated_at = now()
+  WHERE id = $1
+  RETURNING id, offering_id, title, description, weight_percent, assigned_on, due_at, is_open;
+`,
+  listAssignmentsForOffering: `
+  SELECT 
+    a.id, 
+    a.offering_id, 
+    a.title, 
+    a.description, 
+    a.weight_percent, 
+    a.assigned_on, 
+    a.due_at, 
+    a.is_open,
+    COUNT(s.id) AS submissions_count  
+  FROM assignments a
+  LEFT JOIN submissions s ON s.assignment_id = a.id  
+  WHERE a.offering_id = $1
+  GROUP BY a.id  
+  ORDER BY a.due_at NULLS LAST, a.id;
+`,
+  getAssignmentById: `
+  SELECT 
+    a.id,
+    a.offering_id,
+    a.title,
+    a.description,
+    a.weight_percent,
+    a.due_at,
+    a.assigned_on,
+    a.is_open,
+    a.created_at,
+    a.updated_at,
+    co.code AS offering_code,
+    co.name AS offering_name,
+    c.code AS course_code,
+    c.name AS course_name
+  FROM assignments a
+  JOIN course_offering co ON co.id = a.offering_id
+  JOIN courses c ON c.id = co.course_id
+  WHERE a.id = $1;
+`,
+  submitOrResubmit: `
+    INSERT INTO submissions (assignment_id, student_id, submission_url)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (assignment_id, student_id) DO UPDATE
+      SET submission_url = EXCLUDED.submission_url,
+          submitted_at   = now(),
+          updated_at     = now()
+    RETURNING id;
+  `,
+  submitGrade: `
+    UPDATE submissions
+    SET grade_percent = $1, graded_at = now(), graded_by = $2, updated_at = now()
+    WHERE assignment_id = $3 AND student_id = $4;
+  `,
+  listSubmissionsForOffering: `
+  SELECT 
+    e.student_id,
+    u.first_name || ' ' || u.last_name AS student_name,
+    u.email AS student_email,
+    s.assignment_id,
+    s.submission_url,
+    s.submitted_at,
+    s.grade_percent,
+    s.graded_at,
+    s.graded_by,
+    a.title AS assignment_title,
+    grader.first_name || ' ' || grader.last_name AS graded_by_name
+  FROM enrollments e
+  JOIN users u ON u.id = e.student_id
+  CROSS JOIN assignments a
+  LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = e.student_id
+  LEFT JOIN users grader ON grader.id = s.graded_by
+  WHERE e.offering_id = $1 
+    AND a.offering_id = $1
+    AND e.status IN ('enrolled', 'completed')
+  ORDER BY u.last_name, u.first_name, a.id;
+`,
+  getMySubmissions: `
+  SELECT 
+    s.assignment_id,
+    s.submission_url,
+    s.submitted_at,
+    s.grade_percent,
+    s.graded_at,
+    a.title AS assignment_title
+  FROM submissions s
+  JOIN assignments a ON a.id = s.assignment_id
+  WHERE a.offering_id = $1 AND s.student_id = $2
+  ORDER BY s.submitted_at DESC;
+`,
+  listAllSubmissionsForTeacher: `
+  SELECT 
+    e.student_id,
+    u.first_name || ' ' || u.last_name AS student_name,
+    u.email AS student_email,
+    s.assignment_id,
+    s.submission_url,
+    s.submitted_at,
+    s.grade_percent,
+    s.graded_at,
+    s.graded_by,
+    a.id AS assignment_id,
+    a.title AS assignment_title,
+    a.offering_id,
+    co.code AS offering_code,
+    co.name AS offering_name,
+    co.section,
+    t.code AS term_code,
+    grader.first_name || ' ' || grader.last_name AS graded_by_name
+  FROM course_offering co
+  JOIN terms t ON t.id = co.term_id
+  JOIN assignments a ON a.offering_id = co.id
+  JOIN submissions s ON s.assignment_id = a.id
+  JOIN enrollments e ON e.offering_id = co.id AND e.student_id = s.student_id
+  JOIN users u ON u.id = e.student_id
+  LEFT JOIN users grader ON grader.id = s.graded_by
+  WHERE co.teacher_id = $1 
+    AND e.status IN ('enrolled', 'completed')
+    AND t.ends_on >= CURRENT_DATE  -- Only current/future terms
+  ORDER BY s.submitted_at DESC, co.code, u.last_name, u.first_name;
+`,
   // =======
   // GRADES
   // =======
