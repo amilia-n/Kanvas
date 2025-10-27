@@ -33,3 +33,18 @@ INSERT INTO terms (code, starts_on, ends_on) VALUES
 ('SPRING26', DATE '2026-01-23', DATE '2026-05-08')
 ON CONFLICT (code) DO NOTHING;
 
+-- -------------------
+-- Faculty whitelist
+-- -------------------
+INSERT INTO faculty_registry (email, teacher_number, first_name, last_name, active) VALUES
+('atur@faculty.kanvas.edu','T-521834','Alan','Turing',TRUE), -- CHEM + CHEME
+('blis@faculty.kanvas.edu','T-547210','Barbara','Liskov',TRUE),  -- MATH + PHYS
+('dknu@faculty.kanvas.edu','T-563492','Donald','Knuth',TRUE), -- CS
+('enoe@faculty.kanvas.edu','T-574118','Emmy','Noether',TRUE),  -- BIOE + BIOL
+('ghop@faculty.kanvas.edu','T-589603','Grace','Hopper',TRUE), --CEE + ARCH
+('csha@faculty.kanvas.edu','T-592471','Claude','Shannon',TRUE), --MECH
+('hlam@faculty.kanvas.edu','T-603958','Hedy','Lamarr',TRUE), --AERO
+('jbac@faculty.kanvas.edu','T-615327','John','Backus',TRUE), --ECON
+('nwir@faculty.kanvas.edu','T-628409','Niklaus','Wirth',TRUE), --MSE
+('alov@faculty.kanvas.edu','T-639175','Ada','Lovelace',TRUE) --POLS + BCS
+ON CONFLICT (email) DO NOTHING;
