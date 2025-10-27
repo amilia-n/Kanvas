@@ -180,3 +180,5 @@ CREATE INDEX IF NOT EXISTS idx_enroll_student_offering    ON enrollments (studen
 CREATE INDEX IF NOT EXISTS idx_enroll_offering_enrolled   ON enrollments (offering_id) WHERE status = 'enrolled';
 CREATE INDEX IF NOT EXISTS idx_enroll_offering_waitlisted ON enrollments (offering_id, waitlisted_at) WHERE status = 'waitlisted';
 
+CREATE INDEX IF NOT EXISTS idx_course_prereqs_offering        ON course_prereqs (offering_id);
+CREATE INDEX IF NOT EXISTS idx_course_prereqs_prereq_offering ON course_prereqs (prereq_offering_id);
