@@ -67,3 +67,76 @@ const CURRENT = [
     ],
   },
 ];
+
+async function q(c, sql, p){ return c.query(sql, p); }
+async function getId(c, sql, arg){ const r = await q(c, sql, [arg]); return r.rowCount ? r.rows[0].id : null; }
+const getTermId       = (c, code)  => getId(c, `SELECT id FROM terms WHERE code=$1`, code);
+const getUserIdByEmail= (c, email) => getId(c, `SELECT id FROM users WHERE email=$1`, email);
+
+function deptFromOfferingCode(code){ const m = code.match(/^[A-Z]+/); return m ? m[0] : null; }
+function teacherEmailByDept(dept){
+  if (!dept) return null;
+  if (/^CEE/.test(dept) || /^ARCH/.test(dept)) return "ghop@faculty.kanvas.edu";
+  if (/^MECH/.test(dept))  return "csha@faculty.kanvas.edu";
+  if (/^MSE/.test(dept))   return "nwir@faculty.kanvas.edu";
+  if (/^CHEM/.test(dept) || /^CHEME/.test(dept)) return "atur@faculty.kanvas.edu";
+  if (/^CS/.test(dept))    return "dknu@faculty.kanvas.edu";
+  if (/^BIOL/.test(dept) || /^BIOE/.test(dept))  return "enoe@faculty.kanvas.edu";
+  if (/^PHYS/.test(dept) || /^MATH/.test(dept))  return "blis@faculty.kanvas.edu";
+  if (/^BCS/.test(dept) ||  /^POLS/.test(dept))  return "alov@faculty.kanvas.edu";
+  if (/^ECON/.test(dept))  return "jbac@faculty.kanvas.edu";
+  if (/^AERO/.test(dept))  return "hlam@faculty.kanvas.edu";
+  return null;
+}
+
+async function resolveCourseIdFromOfferingCode(c, code){
+  const { rows } = await q(c, `SELECT id FROM courses WHERE code = substring($1 from '^[A-Z]+') LIMIT 1`, [code]);
+  return rows[0]?.id || null;
+}
+async function getCanonicalMeta(c, code){
+  const r = await q(
+    c,
+    `SELECT name, description, credits, course_id
+     FROM course_offering
+     WHERE code=$1
+     ORDER BY id DESC
+     LIMIT 1`, [code]
+  );
+  if (r.rowCount) return r.rows[0];
+  const course_id = await resolveCourseIdFromOfferingCode(c, code);
+  if (!course_id) return null;
+  return { name: code, description: "(historical backfill)", credits: 4, course_id };
+}
+async function getOfferingIdByCodeTermSection(c, { code, term, section }){
+  const { rows } = await q(
+    c,
+    `SELECT co.id
+     FROM course_offering co
+     JOIN terms t ON t.id=co.term_id
+     WHERE co.code=$1 AND t.code=$2 AND co.section=$3
+     LIMIT 1`, [code, term, section]
+  );
+  return rows[0]?.id || null;
+}
+async function ensureHistoricalOffering(c, { code, term, section="A", seats=200 }){
+  const existing = await getOfferingIdByCodeTermSection(c, { code, term, section });
+  if (existing) return existing;
+  const termId = await getTermId(c, term);
+  const meta = await getCanonicalMeta(c, code);
+  if (!termId || !meta?.course_id) return null;
+  const teacherEmail = teacherEmailByDept(deptFromOfferingCode(code));
+  const teacherId = teacherEmail ? await getUserIdByEmail(c, teacherEmail) : null;
+
+  const r = await q(
+    c,
+    `INSERT INTO course_offering
+       (course_id, term_id, teacher_id, code, name, description, credits, section, total_seats, enrollment_open, is_active)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,TRUE,TRUE)
+     ON CONFLICT DO NOTHING
+     RETURNING id`,
+    [meta.course_id, termId, teacherId, code, meta.name, meta.description, meta.credits, section, seats]
+  );
+  if (r.rowCount) return r.rows[0].id;
+  return getOfferingIdByCodeTermSection(c, { code, term, section });
+}
+
