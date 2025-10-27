@@ -309,6 +309,33 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+CREATE OR REPLACE FUNCTION enforce_assignment_weights_total_max()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_sum NUMERIC(7,2);
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    SELECT COALESCE(SUM(weight_percent), 0)
+      INTO v_sum
+      FROM assignments
+     WHERE offering_id = NEW.offering_id;
+    v_sum := v_sum + COALESCE(NEW.weight_percent, 0);
+  ELSE
+    SELECT COALESCE(SUM(weight_percent), 0)
+      INTO v_sum
+      FROM assignments
+     WHERE offering_id = NEW.offering_id
+       AND id <> NEW.id;
+    v_sum := v_sum + COALESCE(NEW.weight_percent, 0);
+  END IF;
+
+  IF v_sum > 100 THEN
+    RAISE EXCEPTION 'Total assignment weights for offering % would be % (must be <= 100)',
+      NEW.offering_id, v_sum USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
