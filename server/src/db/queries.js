@@ -188,6 +188,53 @@ export const queries = {
   // ====================
   // COURSES & OFFERINGS
   // ====================
+  getCourseById: `
+    SELECT id, code, name, created_at, updated_at
+    FROM courses
+    WHERE id = $1;
+  `,
+
+  listCourses: `
+    SELECT id, code, name
+    FROM courses
+    ORDER BY code;
+  `,
+  listCoursesWithOfferings: `
+  SELECT 
+    c.id, 
+    c.code, 
+    c.name,
+    c.created_at,
+    c.updated_at,
+    COALESCE(
+      json_agg(
+        json_build_object(
+          'id', co.id,
+          'offering_code', co.code,
+          'offering_name', co.name,
+          'section', co.section,
+          'description', co.description,
+          'term_code', t.code,
+          'term_id', co.term_id,
+          'teacher_id', co.teacher_id,
+          'teacher_name', u.first_name || ' ' || u.last_name,
+          'credits', co.credits,
+          'total_seats', co.total_seats,
+          'seats_taken', (SELECT COUNT(*) FROM enrollments e WHERE e.offering_id = co.id AND e.status = 'enrolled'),
+          'enrollment_open', co.enrollment_open,
+          'is_active', co.is_active
+        ) ORDER BY t.starts_on DESC, co.section
+      ) FILTER (WHERE co.id IS NOT NULL),
+      '[]'
+    ) AS offerings
+  FROM courses c
+  LEFT JOIN course_offering co ON co.course_id = c.id
+  LEFT JOIN terms t ON t.id = co.term_id
+  LEFT JOIN users u ON u.id = co.teacher_id
+  GROUP BY c.id, c.code, c.name, c.created_at, c.updated_at
+  ORDER BY c.code;
+`,
+  getCourseIdByCode: `SELECT id FROM courses WHERE code=$1;`,
 
   // ======================
   // ELIGIBILITY / PREREQS
