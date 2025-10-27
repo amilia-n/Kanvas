@@ -385,3 +385,130 @@ VALUES
  'Introduction to scientific advances in the field of biological engineering. Topics covered include drug discovery and delivery, applications of genetic engineering, creation and uses of biomaterials, and development of biological technology to mitigate human disease and environmental problems. Discusses each selected topic from different angles, highlighting research conducted from the nano- to macro- level to highlight the breadth of biological engineering applications. Students have the opportunity to select a topic of interest and explore that topic in more depth.',
  4, 'B', 28)
 ON CONFLICT (code, term_id, section) DO NOTHING;
+
+
+-- ==============
+-- PREREQUISITES 
+-- ==============
+INSERT INTO course_prereqs (offering_id, prereq_offering_id) VALUES
+-- CEE101 requires MATH151
+((SELECT id FROM course_offering WHERE code='CEE101' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH151' LIMIT 1)),
+
+-- CEE202 requires MATH151 
+((SELECT id FROM course_offering WHERE code='CEE202' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH151' LIMIT 1)),
+
+-- CEE240 requires MATH152 
+((SELECT id FROM course_offering WHERE code='CEE240' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+
+-- MECH110 requires MATH151 and PHYS151 
+((SELECT id FROM course_offering WHERE code='MECH110' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH151' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='MECH110' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS151' LIMIT 1)),
+
+-- MECH221 requires PHYS151 
+((SELECT id FROM course_offering WHERE code='MECH221' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS151' LIMIT 1)),
+
+-- MECH222 requires CHEM101 and MECH221 
+((SELECT id FROM course_offering WHERE code='MECH222' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CHEM101' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='MECH222' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MECH221' LIMIT 1)),
+
+-- MECH231 
+((SELECT id FROM course_offering WHERE code='MECH231' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='MECH231' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS151' LIMIT 1)),
+
+-- MSE220 
+((SELECT id FROM course_offering WHERE code='MSE220'  LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+
+-- ARCH chain
+((SELECT id FROM course_offering WHERE code='ARCH110' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='ARCH101' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='ARCH201' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='ARCH110' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='ARCH202' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='ARCH201' LIMIT 1)),
+
+-- CHEM chain
+((SELECT id FROM course_offering WHERE code='CHEM201' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CHEM101' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='CHEM202' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CHEM201' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='CHEM230' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CHEM201' LIMIT 1)),
+
+-- CHEM240 
+((SELECT id FROM course_offering WHERE code='CHEM240' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='BIOL101' LIMIT 1)),
+
+-- CS chain
+-- CS prerequisites (CS201 requires CS111 or CS103)
+((SELECT id FROM course_offering WHERE code='CS201' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CS111' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='CS210' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CS201' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='CS220' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CS201' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='CS230' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CS201' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='CS240' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='CS201' LIMIT 1)),
+
+-- BIOL 
+((SELECT id FROM course_offering WHERE code='BIOL220' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='BIOL120' LIMIT 1)),
+
+-- PHYS chain & co-reqs
+((SELECT id FROM course_offering WHERE code='PHYS152' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS151' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='PHYS253' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='PHYS253' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS152' LIMIT 1)),
+
+-- ECON201 
+((SELECT id FROM course_offering WHERE code='ECON201' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='ECON101' LIMIT 1)),
+
+-- MATH chain 
+((SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH151' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='MATH160' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='MATH161' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='MATH165' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH151' LIMIT 1)),
+
+-- AERO 
+((SELECT id FROM course_offering WHERE code='AERO201' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='AERO201' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS151' LIMIT 1)),
+
+((SELECT id FROM course_offering WHERE code='AERO202' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='AERO202' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS152' LIMIT 1)),
+
+((SELECT id FROM course_offering WHERE code='AERO203' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='AERO203' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS152' LIMIT 1)),
+
+((SELECT id FROM course_offering WHERE code='AERO204' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='MATH152' LIMIT 1)),
+((SELECT id FROM course_offering WHERE code='AERO204' LIMIT 1),
+ (SELECT id FROM course_offering WHERE code='PHYS152' LIMIT 1))
+;
+
+
+COMMIT;
