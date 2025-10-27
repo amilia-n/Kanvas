@@ -193,3 +193,6 @@ CREATE INDEX IF NOT EXISTS idx_faculty_email              ON faculty_registry (e
 CREATE INDEX IF NOT EXISTS idx_faculty_tnum               ON faculty_registry (teacher_number);
 
 CREATE INDEX IF NOT EXISTS idx_user_majors_major          ON user_majors (major_code);
+
+CREATE INDEX IF NOT EXISTS idx_materials_offering         ON course_materials (offering_id);
+CREATE INDEX IF NOT EXISTS idx_materials_uploaded_by      ON course_materials (uploaded_by);
