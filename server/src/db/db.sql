@@ -442,3 +442,8 @@ DROP TRIGGER IF EXISTS enrollments_set_enrolled_at      ON enrollments;
 CREATE TRIGGER enrollments_set_enrolled_at
 BEFORE INSERT OR UPDATE ON enrollments
 FOR EACH ROW EXECUTE FUNCTION set_enrolled_at();
+
+DROP TRIGGER IF EXISTS enrollments_set_dropped_at       ON enrollments;
+CREATE TRIGGER enrollments_set_dropped_at
+BEFORE INSERT OR UPDATE ON enrollments
+FOR EACH ROW EXECUTE FUNCTION set_dropped_at();
