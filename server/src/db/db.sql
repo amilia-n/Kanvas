@@ -182,3 +182,6 @@ CREATE INDEX IF NOT EXISTS idx_enroll_offering_waitlisted ON enrollments (offeri
 
 CREATE INDEX IF NOT EXISTS idx_course_prereqs_offering        ON course_prereqs (offering_id);
 CREATE INDEX IF NOT EXISTS idx_course_prereqs_prereq_offering ON course_prereqs (prereq_offering_id);
+
+CREATE INDEX IF NOT EXISTS idx_assignments_offering       ON assignments (offering_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_offering_weight ON assignments (offering_id, weight_percent);
