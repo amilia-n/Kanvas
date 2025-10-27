@@ -282,6 +282,15 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+CREATE OR REPLACE FUNCTION set_enrolled_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status = 'enrolled' AND (TG_OP='INSERT' OR OLD.status IS DISTINCT FROM 'enrolled') THEN
+    NEW.enrolled_at := COALESCE(NEW.enrolled_at, now());
+  END IF;
+  RETURN NEW;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
