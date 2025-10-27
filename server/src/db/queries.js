@@ -236,6 +236,286 @@ export const queries = {
 `,
   getCourseIdByCode: `SELECT id FROM courses WHERE code=$1;`,
 
+  createOffering: `
+    INSERT INTO course_offering
+      (course_id, term_id, teacher_id, code, name, description, section, credits, total_seats, enrollment_open, is_active)
+    VALUES
+      ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, TRUE), COALESCE($11, TRUE))
+    RETURNING id;
+  `,
+  updateOffering: `
+    UPDATE course_offering
+    SET name           = COALESCE($2, name), 
+        description    = COALESCE($3, description), 
+        section        = COALESCE($4, section),
+        credits        = COALESCE($5, credits), 
+        total_seats    = COALESCE($6, total_seats), 
+        enrollment_open= COALESCE($7, enrollment_open),
+        is_active      = COALESCE($8, is_active), 
+        updated_at     = now()
+    WHERE id = $1
+    RETURNING id;
+  `,
+  deleteOffering: `DELETE FROM course_offering WHERE id = $1;`,
+  findOffering: `
+  SELECT 
+    co.id,
+    co.course_id,
+    c.code AS course_code,
+    c.name AS course_name,
+    co.code AS offering_code,
+    co.name AS offering_name,
+    co.description,
+    co.credits,
+    t.code AS term_code,
+    co.section,
+    co.total_seats, 
+    co.is_active, 
+    co.enrollment_open,
+    u.id AS teacher_id,
+    u.first_name || ' ' || u.last_name AS teacher_name,
+    COALESCE(
+      (
+        SELECT json_agg(
+          json_build_object(
+            'id', prereq_co.id,
+            'code', prereq_co.code,
+            'name', prereq_co.name
+          )
+        )
+        FROM course_prereqs cp
+        JOIN course_offering prereq_co ON prereq_co.id = cp.prereq_offering_id
+        WHERE cp.offering_id = co.id
+      ),
+      '[]'::json
+    ) AS prerequisites
+  FROM course_offering co
+  JOIN courses c ON c.id = co.course_id
+  JOIN terms t ON t.id = co.term_id
+  JOIN users u ON u.id = co.teacher_id
+  WHERE co.id = $1;
+`,
+  offeringListWithSeats: `
+    SELECT 
+      co.id AS offering_id,
+      c.code AS course_code, 
+      c.name AS course_name,
+      co.code AS offering_code,
+      co.name AS offering_name,
+      co.credits,
+      t.code  AS term_code,
+      co.section,
+      u.first_name || ' ' || u.last_name AS teacher_name,
+      co.total_seats,
+      (co.total_seats - COALESCE(en.ct,0)) AS seats_left,
+      co.enrollment_open, co.is_active, co.created_at
+    FROM course_offering co
+    JOIN courses c ON c.id = co.course_id
+    JOIN terms   t ON t.id = co.term_id
+    JOIN users   u ON u.id = co.teacher_id
+    LEFT JOIN LATERAL (
+      SELECT COUNT(*)::INT AS ct
+      FROM enrollments e
+      WHERE e.offering_id = co.id AND e.status = 'enrolled'
+    ) en ON true
+    WHERE co.is_active = TRUE
+    ORDER BY t.starts_on, c.code, co.code, co.section;
+  `,
+  listOfferingsForCourse: `
+  SELECT 
+    co.id,
+    co.course_id,
+    co.code AS offering_code,
+    co.name AS offering_name,
+    co.section,
+    co.credits,
+    co.total_seats,
+    co.enrollment_open,
+    co.is_active,
+    t.id AS term_id,
+    t.code AS term_code,
+    t.starts_on,
+    t.ends_on,
+    u.id AS teacher_id,
+    u.first_name || ' ' || u.last_name AS teacher_name,
+    (
+      SELECT COUNT(*)
+      FROM enrollments e
+      WHERE e.offering_id = co.id AND e.status IN ('enrolled', 'completed')
+    ) AS enrolled_count,
+    (
+      co.total_seats - (
+        SELECT COUNT(*)
+        FROM enrollments e
+        WHERE e.offering_id = co.id AND e.status = 'enrolled'
+      )
+    ) AS seats_left,
+    CASE
+      WHEN t.starts_on > CURRENT_DATE THEN 'upcoming'
+      WHEN t.starts_on <= CURRENT_DATE AND t.ends_on >= CURRENT_DATE THEN 'current'
+      WHEN t.ends_on < CURRENT_DATE THEN 'past'
+      ELSE 'unknown'
+    END AS status
+  FROM course_offering co
+  JOIN courses c ON c.id = co.course_id
+  JOIN terms t ON t.id = co.term_id
+  JOIN users u ON u.id = co.teacher_id
+  WHERE c.id = $1
+    AND co.is_active = TRUE
+  ORDER BY 
+    CASE 
+      WHEN t.starts_on <= CURRENT_DATE AND t.ends_on >= CURRENT_DATE THEN 1
+      WHEN t.starts_on > CURRENT_DATE THEN 2
+      ELSE 3
+    END,
+    t.starts_on DESC,
+    co.section;
+`,
+  offeringEligibilityInfo: `
+  SELECT
+    co.course_id,
+    co.is_active,
+    co.enrollment_open,
+    (co.total_seats - COALESCE((
+      SELECT COUNT(*) FROM enrollments e
+      WHERE e.offering_id = co.id AND e.status = 'enrolled'
+    ),0))::int AS seats_left
+  FROM course_offering co
+  WHERE co.id = $1;
+`,
+  offeringFilter: `
+  SELECT 
+    co.id,
+    co.course_id,
+    co.code AS offering_code,
+    co.name AS offering_name,
+    co.description,
+    co.section,
+    co.credits,
+    co.total_seats,
+    co.enrollment_open,
+    co.is_active,
+    c.code AS course_code,
+    c.name AS course_name,
+    t.code AS term_code,
+    u.first_name || ' ' || u.last_name AS teacher_name,
+    (
+      SELECT COUNT(*)
+      FROM enrollments e
+      WHERE e.offering_id = co.id AND e.status IN ('enrolled', 'completed')
+    ) AS enrolled_count
+  FROM course_offering co
+  JOIN courses c ON c.id = co.course_id
+  JOIN terms t ON t.id = co.term_id
+  JOIN users u ON u.id = co.teacher_id
+  WHERE ($1::BIGINT IS NULL OR co.term_id = $1)
+    AND ($2::BIGINT IS NULL OR co.teacher_id = $2)
+    AND ($3::TEXT IS NULL OR 
+         c.code ILIKE '%'||$3||'%' OR 
+         c.name ILIKE '%'||$3||'%' OR 
+         co.code ILIKE '%'||$3||'%' OR 
+         co.name ILIKE '%'||$3||'%' OR 
+         co.description ILIKE '%'||$3||'%')
+    AND ($4::TEXT IS NULL OR co.section ILIKE '%'||$4||'%')
+  ORDER BY c.code, co.code, co.section
+  LIMIT COALESCE($5::INT, 100) OFFSET COALESCE($6::INT, 0);
+`,
+  isUserInOffering: `
+  SELECT EXISTS (
+    SELECT 1
+    FROM enrollments e
+    WHERE e.offering_id = $1
+      AND e.student_id = $2
+      AND e.status IN ('enrolled', 'completed')
+  ) AS ok;
+`,
+  getStudentOfferings: `
+    SELECT 
+      co.id,
+      co.course_id,
+      c.code AS course_code,
+      c.name AS course_name,
+      co.code AS offering_code,
+      co.name AS offering_name,
+      co.credits,
+      t.code AS term_code,
+      t.starts_on,
+      t.ends_on,
+      co.section,
+      e.status AS enrollment_status,
+      e.final_percent AS final_grade,
+      u.first_name || ' ' || u.last_name AS teacher_name,
+      u.email AS teacher_email,
+      CASE
+        WHEN e.status = 'enrolled' AND t.ends_on >= CURRENT_DATE THEN 'current'
+        WHEN e.status = 'enrolled' AND t.ends_on < CURRENT_DATE  THEN 'enrolled'
+        WHEN e.status = 'completed' THEN 'completed'
+        ELSE e.status
+      END AS status
+    FROM enrollments e
+    JOIN course_offering co ON co.id = e.offering_id
+    JOIN courses c ON c.id = co.course_id
+    JOIN terms t ON t.id = co.term_id
+    JOIN users u ON u.id = co.teacher_id
+    WHERE e.student_id = $1
+      AND e.status IN ('enrolled', 'completed')
+    ORDER BY 
+      CASE 
+        WHEN e.status = 'enrolled' AND t.ends_on >= CURRENT_DATE THEN 1
+        WHEN e.status = 'enrolled' AND t.ends_on < CURRENT_DATE  THEN 2
+        ELSE 3
+      END,
+      t.starts_on DESC,
+      c.code, co.code, co.section;
+  `,
+  getTeacherOfferings: `
+  SELECT 
+    co.id,
+    co.course_id,
+    c.code AS course_code,
+    c.name AS course_name,
+    co.code AS offering_code,
+    co.name AS offering_name,
+    co.credits,
+    t.code AS term_code,
+    t.starts_on,
+    t.ends_on,
+    co.section,
+    co.total_seats,
+    co.enrollment_open,
+    co.is_active,
+    (
+      SELECT COUNT(*)
+      FROM enrollments e
+      WHERE e.offering_id = co.id AND e.status IN ('enrolled', 'completed')
+    ) AS enrolled_count,
+    (
+      co.total_seats - (
+        SELECT COUNT(*)
+        FROM enrollments e
+        WHERE e.offering_id = co.id AND e.status = 'enrolled'
+      )
+    ) AS seats_left,
+    CASE
+      WHEN t.starts_on > CURRENT_DATE THEN 'upcoming'
+      WHEN t.starts_on <= CURRENT_DATE AND t.ends_on >= CURRENT_DATE THEN 'current'
+      WHEN t.ends_on < CURRENT_DATE THEN 'past'
+      ELSE 'unknown'
+    END AS status
+  FROM course_offering co
+  JOIN courses c ON c.id = co.course_id
+  JOIN terms t ON t.id = co.term_id
+  WHERE co.teacher_id = $1
+    AND co.is_active = TRUE
+  ORDER BY 
+    CASE 
+      WHEN t.starts_on <= CURRENT_DATE AND t.ends_on >= CURRENT_DATE THEN 1
+      WHEN t.starts_on > CURRENT_DATE THEN 2
+      ELSE 3
+    END,
+    t.starts_on DESC,
+    c.code, co.code, co.section;
+`,
   // ======================
   // ELIGIBILITY / PREREQS
   // ======================
