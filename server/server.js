@@ -1,4 +1,5 @@
 import "dotenv/config";  
+import path from 'node:path';
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -19,7 +20,9 @@ import errorHandler from "./src/middleware/error.js";
 
 import cookieParser from "cookie-parser";
 
+
 const app = express();
+const dist = path.join(process.cwd(), 'client', 'dist');
 app.enable("trust proxy");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -27,7 +30,6 @@ app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-// Health check endpoint for Render
 app.get("/healthz", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
@@ -44,6 +46,9 @@ app.use("/api/submissions", submissionsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
+
+app.use(express.static(dist));
+app.get('*', (_, res) => res.sendFile(path.join(dist, 'index.html')));
 
 const port = Number(config.PORT) || 8888;
 app.listen(port, () => {
