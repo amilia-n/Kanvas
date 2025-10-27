@@ -368,3 +368,159 @@ async function filterOfferings(c, { code, term, section }) {
   );
   return result.rows[0]?.id || null;
 }
+
+const TARGET_PAST_TERM = "SPRING25"; 
+const HIST_SECTION = "P";
+const HIST_ASSIGN_PACK = [
+  ["Quiz",   10],
+  ["HW 1",   20],
+  ["Essay 1",20],
+  ["HW 2",   20],
+  ["Final",  30],
+];
+async function seedPastAssignmentsForAllOfferings(c) {
+  const { rows } = await q(
+    c,
+    `SELECT co.id AS offering_id, co.code, t.code AS term_code
+     FROM course_offering co
+     JOIN terms t ON t.id = co.term_id
+     WHERE t.ends_on < CURRENT_DATE
+       AND NOT EXISTS (SELECT 1 FROM assignments a WHERE a.offering_id = co.id)
+     ORDER BY t.code, co.code, co.section`
+  );
+
+  let created = 0;
+  for (const r of rows) {
+
+    await addAssignments(c, r.offering_id, HIST_ASSIGN_PACK, r.term_code);
+    
+    await enrollStudents(c, r.offering_id, ALL_STUDENT_EMAILS);
+    
+    const teacherEmail = teacherEmailByDept(deptFromOfferingCode(r.code));
+    await gradeAllAssignmentsRandomized(c, { 
+      offeringId: r.offering_id, 
+      courseCode: r.code, 
+      teacherEmail 
+    });
+    
+    await completeEnrollmentsForOffering(c, r.offering_id, r.term_code);
+    
+    created++;
+  }
+  return created;
+}
+
+async function getAllPrereqCodes(c){
+  const currentCodes = CURRENT.map(obj => obj.code);
+  
+  const { rows } = await q(
+    c,
+    `SELECT DISTINCT co.code AS code
+     FROM course_prereqs cp
+     JOIN course_offering co ON co.id = cp.prereq_offering_id
+     WHERE co.code != ALL($1::text[])
+     ORDER BY co.code`,
+    [currentCodes]
+  );
+  return rows.map(r => r.code);
+}
+
+function randomPassing(){ return Math.min(99, 82 + Math.floor(Math.random()*18)); } // 82..99
+async function gradeAllAssignmentsRandomized(c, { offeringId, courseCode, teacherEmail }){
+  const teacherId = teacherEmail ? await getUserIdByEmail(c, teacherEmail) : null;
+  const a = await q(c, `SELECT id, title, due_at FROM assignments WHERE offering_id=$1 ORDER BY id`, [offeringId]);
+  const st = await q(
+    c,
+    `SELECT e.student_id, u.email
+     FROM enrollments e JOIN users u ON u.id=e.student_id
+     WHERE e.offering_id=$1 AND e.status IN ('enrolled','completed')`,
+    [offeringId]
+  );
+  for (const s of st.rows){
+    for (const asn of a.rows){
+      const handle = s.email.split("@")[0];
+      const url = `https://files.example.com/${courseCode}/${encodeURIComponent(asn.title)}/${handle}.pdf`;
+      const due = new Date(asn.due_at);
+      const submittedAt = new Date(due.getTime() - 24*60*60*1000);
+      await q(
+        c,
+        `INSERT INTO submissions (assignment_id, student_id, submission_url, submitted_at)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (assignment_id, student_id) DO UPDATE
+           SET submission_url=EXCLUDED.submission_url,
+               submitted_at=COALESCE(submissions.submitted_at, EXCLUDED.submitted_at),
+               updated_at=now()`,
+        [asn.id, s.student_id, url, submittedAt.toISOString()]
+      );
+      await q(
+        c,
+        `UPDATE submissions
+         SET grade_percent=$1, graded_at=now(), graded_by=$2, updated_at=now()
+         WHERE assignment_id=$3 AND student_id=$4`,
+        [randomPassing(), teacherId, asn.id, s.student_id]
+      );
+    }
+  }
+}
+async function completeEnrollmentsForOffering(c, offeringId, termCode){
+  const termId = await getTermId(c, termCode);
+  const { rows } = await q(c, `SELECT ends_on FROM terms WHERE id=$1`, [termId]);
+  const endsOn = rows[0]?.ends_on;
+  await q(
+    c,
+    `UPDATE enrollments
+     SET status='completed',
+         completed_at=$2::timestamp,
+         updated_at=now()
+     WHERE offering_id=$1`,
+    [offeringId, endsOn ?? new Date().toISOString().slice(0,10)]
+  );
+}
+async function backfillAllPrereqHistory(c){
+  const codes = await getAllPrereqCodes(c);
+  if (!codes.length) return;
+  const termId = await getTermId(c, TARGET_PAST_TERM);
+  if (!termId){
+    console.warn(`Term ${TARGET_PAST_TERM} not found; skipping prereq backfill.`);
+    return;
+  }
+  const emails = ALL_STUDENT_EMAILS;
+  for (const code of codes){
+    const teacherEmail = teacherEmailByDept(deptFromOfferingCode(code));
+    
+    const { rows: existingRows } = await q(
+      c,
+      `SELECT co.id, co.section
+       FROM course_offering co
+       JOIN terms t ON t.id = co.term_id
+       WHERE co.code = $1 AND t.code = $2
+       LIMIT 1`,
+      [code, TARGET_PAST_TERM]
+    );
+    
+    let offId, section;
+    if (existingRows.length > 0) {
+      offId = existingRows[0].id;
+      section = existingRows[0].section;
+      console.log(`[HIST] Using existing ${code} ${TARGET_PAST_TERM} section ${section}`);
+    } else {
+      offId = await ensureHistoricalOffering(c, { code, term: TARGET_PAST_TERM, section: HIST_SECTION, seats: 200 });
+      section = HIST_SECTION;
+    }
+    
+    if (!offId){
+      console.warn(`Could not create historical offering for ${code} ${TARGET_PAST_TERM}`);
+      continue;
+    }
+    
+    await addMaterials(c, offId, teacherEmail, [
+      [`Syllabus (${code} ${TARGET_PAST_TERM})`, `https://materials.example.com/${code.toLowerCase()}/${TARGET_PAST_TERM.toLowerCase()}/syllabus.pdf`],
+      [`Week 1 Slides (${code})`,               `https://materials.example.com/${code.toLowerCase()}/${TARGET_PAST_TERM.toLowerCase()}/wk1-slides.pdf`],
+    ]);
+    await addAssignments(c, offId, HIST_ASSIGN_PACK, TARGET_PAST_TERM);
+    await enrollStudents(c, offId, emails);
+    await gradeAllAssignmentsRandomized(c, { offeringId: offId, courseCode: code, teacherEmail });
+    await completeEnrollmentsForOffering(c, offId, TARGET_PAST_TERM);
+    console.log(`[HIST] Backfilled ${code} ${TARGET_PAST_TERM} section ${section}`);
+  }
+}
