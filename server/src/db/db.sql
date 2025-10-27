@@ -71,3 +71,9 @@ CREATE TABLE IF NOT EXISTS course_offering (
     CONSTRAINT uq_offering_code_term_section UNIQUE (code, term_id, section),
     CONSTRAINT chk_offering_code_format CHECK (code ~ '^[A-Z]{2,5}[0-9]{3}$')
 );
+CREATE TABLE IF NOT EXISTS course_prereqs (
+    offering_id BIGINT NOT NULL REFERENCES course_offering (id) ON DELETE CASCADE,
+    prereq_offering_id BIGINT NOT NULL REFERENCES course_offering (id) ON DELETE CASCADE,
+    PRIMARY KEY (offering_id, prereq_offering_id),
+    CHECK (offering_id <> prereq_offering_id)
+);
