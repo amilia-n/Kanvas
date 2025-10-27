@@ -186,3 +186,17 @@ export async function isUserInOffering(offering_id, user_id) {
   ]);
   return !!rows[0]?.ok;
 }
+
+export async function addOfferingPrereq(offering_id, prereq_offering_id) {
+  await pool.query(queries.addOfferingPrereq, [
+    offering_id,
+    prereq_offering_id,
+  ]);
+}
+
+export async function removeOfferingPrereq(offering_id, prereq_offering_id) {
+  await pool.query(queries.removeOfferingPrereq, [
+    offering_id,
+    prereq_offering_id,
+  ]);
+}
