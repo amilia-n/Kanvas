@@ -105,7 +105,7 @@ export default function StudentGradesView() {
       </div>
 
       {/* Cumulative GPA Card - Color Coded */}
-      <Card className="border-primary/50 bg-gradient-to-br from-primary/5 to-primary/10">
+      <Card className="border-primary/50 bg-linear-to-br from-primary/5 to-primary/10">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5 text-primary" />

@@ -391,7 +391,7 @@ export default function OfferingDetailPage() {
               <CardTitle>Description</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0 overflow-y-auto px-10">
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words leading-relaxed">
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap wrap-break-word leading-relaxed">
                 {offering.description}
               </p>
             </CardContent>

@@ -161,7 +161,7 @@ export default function Sidebar() {
               }
               title={isCollapsed ? item.label : undefined}
             >
-              <Icon className="h-4 w-4 flex-shrink-0" />
+              <Icon className="h-4 w-4 shrink-0" />
               {!isCollapsed && <span className="truncate">{item.label}</span>}
             </NavLink>
           );
@@ -175,7 +175,7 @@ export default function Sidebar() {
             isCollapsed && "justify-center"
           )}
         >
-          <GraduationCap className="h-4 w-4 flex-shrink-0" />
+          <GraduationCap className="h-4 w-4 shrink-0" />
           {!isCollapsed && (
             <span>
               {isTeacher ? "Teacher" : isStudent ? "Student" : "User"} Portal

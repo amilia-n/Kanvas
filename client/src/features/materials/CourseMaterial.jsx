@@ -166,7 +166,7 @@ export default function CourseMaterialPage() {
 
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[160px]">
+              <SelectTrigger className="w-40">
                 <SortAsc className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>

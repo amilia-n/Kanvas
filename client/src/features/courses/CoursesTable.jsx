@@ -280,7 +280,7 @@ export default function CoursesTable({
 
                                 {/* Description */}
                                 {offering.description && (
-                                  <p className="text-sm text-muted-foreground mt-1 w-full max-w-prose break-words whitespace-pre-line leading-relaxed px-3 pt-0 pb-5">
+                                  <p className="text-sm text-muted-foreground mt-1 w-full max-w-prose wrap-break-word whitespace-pre-line leading-relaxed px-3 pt-0 pb-5">
                                     {offering.description}
                                   </p>
                                 )}

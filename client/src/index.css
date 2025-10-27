@@ -146,3 +146,14 @@ button[class*="variant-link"]:hover:not(:disabled),
 button[class*="variant=\"link\""]:hover:not(:disabled) {
   text-decoration: none;
 }
+
+[data-radix-select-content] {
+  background: hsl(var(--popover)) !important;
+  opacity: 1 !important;
+  z-index: 50 !important;
+}
+
+[data-radix-select-viewport] {
+  background: hsl(var(--popover)) !important;
+  z-index: 50 !important;
+}

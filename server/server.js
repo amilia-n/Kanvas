@@ -27,6 +27,11 @@ app.use(cors({ origin: config.CORS_ORIGIN, credentials: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+// Health check endpoint for Render
+app.get("/healthz", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/courses", coursesRoutes);

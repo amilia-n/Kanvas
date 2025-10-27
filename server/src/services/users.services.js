@@ -67,7 +67,7 @@ export async function deleteUser(id) {
 
 export async function listUserMajors(user_id) {
   const { rows } = await pool.query(queries.listUserMajors, [user_id]);
-  return rows.map((r) => r.major_code);
+  return rows;
 }
 
 export async function addUserMajor(user_id, major_code) {

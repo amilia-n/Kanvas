@@ -327,15 +327,15 @@ export default function CoursesPage() {
 
           {/* Search Suggestions Dropdown */}
           {showSearchSuggestions && searchSuggestions.length > 0 && (
-            <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-96 overflow-auto">
-              <div className="p-2 text-xs text-muted-foreground border-b">
+            <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-96 overflow-auto">
+              <div className="p-2 text-xs text-foreground bg-white border-b">
                 {searchSuggestions.length} offering
                 {searchSuggestions.length !== 1 ? "s" : ""} match "{q}"
               </div>
               {searchSuggestions.map((suggestion) => (
                 <div
                   key={suggestion.offeringId}
-                  className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
+                  className="p-3 bg-white cursor-pointer border-b last:border-b-0"
                   onClick={() => {
                     setQ(suggestion.offeringCode);
                     setShowSearchSuggestions(false);
