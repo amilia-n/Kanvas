@@ -185,3 +185,6 @@ CREATE INDEX IF NOT EXISTS idx_course_prereqs_prereq_offering ON course_prereqs 
 
 CREATE INDEX IF NOT EXISTS idx_assignments_offering       ON assignments (offering_id);
 CREATE INDEX IF NOT EXISTS idx_assignments_offering_weight ON assignments (offering_id, weight_percent);
+
+CREATE INDEX IF NOT EXISTS idx_submissions_assignment     ON submissions (assignment_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_student        ON submissions (student_id);
