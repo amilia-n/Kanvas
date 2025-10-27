@@ -36,3 +36,33 @@ export async function deleteUser(id) {
   return { ok: true };
 }
 
+
+export async function listUserMajors(user_id) {
+  const { rows } = await pool.query(queries.listUserMajors, [user_id]);
+  return rows.map(r => r.major_code);
+}
+
+export async function addUserMajor(user_id, major_code) {
+  await pool.query(queries.addUserMajor, [user_id, major_code]);
+  return { ok: true };
+}
+
+export async function removeUserMajor(user_id, major_code) {
+  await pool.query(queries.removeUserMajor, [user_id, major_code]);
+  return { ok: true };
+}
+
+export async function addUserMajorsBulk(user_id, codes) {
+  await pool.query(queries.addUserMajorsBulk, [user_id, codes]);
+  return { ok: true };
+}
+
+export async function replaceUserMajors(user_id, codes) {
+  await pool.query(queries.replaceUserMajors, [user_id, codes]);
+  return { ok: true };
+}
+
+export async function listMajors() {
+  const { rows } = await pool.query(queries.listMajors);
+  return rows;
+}
