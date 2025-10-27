@@ -328,12 +328,10 @@ BEGIN
        AND id <> NEW.id;
     v_sum := v_sum + COALESCE(NEW.weight_percent, 0);
   END IF;
-
   IF v_sum > 100 THEN
     RAISE EXCEPTION 'Total assignment weights for offering % would be % (must be <= 100)',
       NEW.offering_id, v_sum USING ERRCODE = '23514';
   END IF;
-
   RETURN NEW;
 END $$;
 
@@ -421,3 +419,11 @@ CREATE INDEX IF NOT EXISTS idx_user_majors_major          ON user_majors (major_
 
 CREATE INDEX IF NOT EXISTS idx_materials_offering         ON course_materials (offering_id);
 CREATE INDEX IF NOT EXISTS idx_materials_uploaded_by      ON course_materials (uploaded_by);
+
+-- -------------------------
+-- Triggers
+-- -------------------------
+DROP TRIGGER IF EXISTS majors_set_updated               ON majors;
+CREATE TRIGGER majors_set_updated
+BEFORE UPDATE ON majors
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
