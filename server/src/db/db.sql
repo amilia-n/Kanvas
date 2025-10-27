@@ -173,3 +173,10 @@ CREATE INDEX IF NOT EXISTS idx_offering_term              ON course_offering (te
 CREATE INDEX IF NOT EXISTS idx_offering_course            ON course_offering (course_id);
 CREATE INDEX IF NOT EXISTS idx_offering_teacher           ON course_offering (teacher_id);
 CREATE INDEX IF NOT EXISTS idx_offering_code_term_section ON course_offering (code, term_id, section);
+
+CREATE INDEX IF NOT EXISTS idx_enroll_offering            ON enrollments (offering_id);
+CREATE INDEX IF NOT EXISTS idx_enroll_student             ON enrollments (student_id);
+CREATE INDEX IF NOT EXISTS idx_enroll_student_offering    ON enrollments (student_id, offering_id);
+CREATE INDEX IF NOT EXISTS idx_enroll_offering_enrolled   ON enrollments (offering_id) WHERE status = 'enrolled';
+CREATE INDEX IF NOT EXISTS idx_enroll_offering_waitlisted ON enrollments (offering_id, waitlisted_at) WHERE status = 'waitlisted';
+
