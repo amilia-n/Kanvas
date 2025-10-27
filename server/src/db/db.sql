@@ -345,21 +345,52 @@ BEGIN
   SELECT offering_id INTO v_offering_id
   FROM assignments
   WHERE id = NEW.assignment_id;
-
   SELECT EXISTS (
     SELECT 1 FROM enrollments e
     WHERE e.offering_id = v_offering_id
       AND e.student_id  = NEW.student_id
       AND e.status IN ('enrolled','completed')
   ) INTO v_ok;
-
   IF NOT v_ok THEN
     RAISE EXCEPTION 'Submission forbidden: student % has no enrollment for offering %',
       NEW.student_id, v_offering_id USING ERRCODE = '23514';
   END IF;
-
   RETURN NEW;
 END $$;
+
+CREATE OR REPLACE FUNCTION enforce_retake_policy()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_offering_code TEXT;
+DECLARE v_bad_attempts INT;
+BEGIN
+  SELECT code INTO v_offering_code
+  FROM course_offering
+  WHERE id = NEW.offering_id;
+  -- block re-enroll if already completed with C+ or higher (>=77)
+  IF EXISTS (
+    SELECT 1
+    FROM enrollments e
+    JOIN course_offering co ON co.id = e.offering_id
+    WHERE e.student_id = NEW.student_id
+      AND co.code = v_offering_code
+      AND e.status = 'completed'
+      AND COALESCE(e.final_percent, 0) >= 77
+  ) THEN
+    RAISE EXCEPTION 'Re-enrollment not allowed: course already completed with C+ or better';
+  END IF;
+  -- allow only one retake after dropped or < C+
+  SELECT COUNT(*) INTO v_bad_attempts
+  FROM enrollments e
+  JOIN course_offering co ON co.id = e.offering_id
+  WHERE e.student_id = NEW.student_id
+    AND co.code = v_offering_code 
+    AND (e.status = 'dropped' OR (e.status = 'completed' AND COALESCE(e.final_percent, 0) < 77));
+  IF v_bad_attempts >= 2 THEN
+    RAISE EXCEPTION 'Re-enrollment not allowed: maximum 2 attempts';
+  END IF;
+  RETURN NEW;
+END $$;
+
 -- -------------------------
 -- Indexes
 -- -------------------------
