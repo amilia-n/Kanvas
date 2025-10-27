@@ -45,3 +45,21 @@ export async function deleteOffering(req, res, next) {
   } catch (err) { next(err); }
 }
 
+export async function getMyOfferings(req, res, next) {
+  try {
+    const userId = req.user.id;
+    const role = req.user.role;
+    
+    let result;
+    if (role === 'teacher' || role === 'admin') {
+      result = await offerings.getTeacherOfferings(userId);
+    } else {
+      result = await offerings.getStudentOfferings(userId);
+    }
+    
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
