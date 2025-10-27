@@ -809,8 +809,91 @@ export const queries = {
   // =======
   // GRADES
   // =======
-
+  courseGradeBreakdown: `
+    SELECT a.id AS assignment_id, a.title, a.weight_percent, a.due_at,
+           s.submitted_at, s.grade_percent, s.graded_at, s.graded_by
+    FROM assignments a
+    LEFT JOIN submissions s
+      ON s.assignment_id = a.id AND s.student_id = $1
+    WHERE a.offering_id = $2
+    ORDER BY a.due_at, a.id;
+  `,
+  currentWeightedGrade: `
+    SELECT $1::BIGINT AS student_id,
+           ROUND(SUM(COALESCE(s.grade_percent,0) * a.weight_percent)/100.0, 2) AS current_weighted_percent
+    FROM assignments a
+    LEFT JOIN submissions s
+      ON s.assignment_id = a.id AND s.student_id = $1
+    WHERE a.offering_id = $2;
+  `,
+  finalPercentPerCourseCompleted: `
+    SELECT e.offering_id, c.id AS course_id, c.code, c.name,
+           COALESCE(e.final_percent, 0) AS final_percent
+    FROM enrollments e
+    JOIN course_offering co ON co.id = e.offering_id
+    JOIN courses c ON c.id = co.course_id
+    WHERE e.student_id = $1
+      AND e.status = 'completed';
+  `,
+  gpaPerCourse: `
+  WITH finals AS (
+  SELECT e.offering_id, co.credits,
+         COALESCE(e.final_percent, 0) AS pct
+  FROM enrollments e
+  JOIN course_offering co ON co.id = e.offering_id
+  WHERE e.student_id = $1 AND e.status = 'completed'
+)
+SELECT offering_id, credits, pct,
+       percent_to_gpa(pct) AS gpa_points
+FROM finals;
+`,
+  cumulativeGPA: `
+  WITH finals AS (
+  SELECT co.credits,
+         COALESCE(e.final_percent, 0) AS pct
+  FROM enrollments e
+  JOIN course_offering co ON co.id = e.offering_id
+  WHERE e.student_id = $1 AND e.status = 'completed'
+)
+  SELECT CASE
+    WHEN SUM(credits) = 0 THEN NULL
+    ELSE ROUND(SUM(percent_to_gpa(pct) * credits) / SUM(credits), 2)
+    END AS cumulative_gpa,
+    SUM(credits) AS total_credits
+FROM finals;
+`,
   // ==========
   // MATERIALS
   // ==========
+  addMaterial: `
+    INSERT INTO course_materials (offering_id, title, url, uploaded_by)
+    VALUES ($1,$2,$3,$4)
+    RETURNING id;
+  `,
+  listMaterials: `
+    SELECT id, title, url, uploaded_at
+    FROM course_materials
+    WHERE offering_id = $1
+    ORDER BY uploaded_at DESC;
+  `,
+  deleteMaterial: `DELETE FROM course_materials WHERE id = $1;`,
+  canViewMaterials: `
+    SELECT EXISTS (
+      SELECT 1
+      FROM course_offering co
+      LEFT JOIN enrollments e
+        ON e.offering_id = co.id
+       AND e.student_id  = $1
+       AND e.status      = 'enrolled'
+      LEFT JOIN users u ON u.id = $1
+      WHERE co.id = $2
+        AND (co.teacher_id = $1 OR e.id IS NOT NULL OR u.role = 'admin')
+    ) AS ok;
+  `,
+  findMaterialMeta: `
+  SELECT m.id, m.uploaded_by, co.teacher_id
+  FROM course_materials m
+  JOIN course_offering co ON co.id = m.offering_id
+  WHERE m.id = $1;
+`,
 };
