@@ -85,3 +85,8 @@ export async function getNextTerm() {
   const { rows } = await pool.query(queries.getNextTerm);
   return rows[0];
 }
+
+export async function searchOfferingClassmates(offering_id, q) {
+  const { rows } = await pool.query(queries.searchOfferingClassmates, [offering_id, q]);
+  return rows;
+}
