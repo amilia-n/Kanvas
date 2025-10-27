@@ -126,7 +126,6 @@ export default function Sidebar() {
         isCollapsed ? "w-16" : "w-64"
       )}
     >
-
       <div className="flex items-center justify-end p-2 px-3 border-border">
         <Button
           variant="ghost"
