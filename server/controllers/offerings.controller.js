@@ -63,3 +63,33 @@ export async function getMyOfferings(req, res, next) {
   }
 }
 
+export async function findOffering(req, res, next) {
+  try {
+    const id = Number(req.params.id);
+    const row = await offerings.findOffering(id);
+    if (!row) return res.status(404).json({ message: "Not found" });
+    res.json(row);
+  } catch (err) { next(err); }
+}
+
+export async function offeringListWithSeats(req, res, next) {
+  try {
+    const rows = await offerings.offeringListWithSeats();
+    res.json(rows);
+  } catch (err) { next(err); }
+}
+
+export async function offeringFilter(req, res, next) {
+  try {
+    const { term_id, teacher_id, q, section, limit, offset } = req.query;
+    const rows = await offerings.offeringFilter({
+      term_id: term_id ? Number(term_id) : null,
+      teacher_id: teacher_id ? Number(teacher_id) : null,
+      q: q ?? null,
+      section: section ?? null,
+      limit: limit ? Number(limit) : null,
+      offset: offset ? Number(offset) : null,
+    });
+    res.json(rows);
+  } catch (err) { next(err); }
+}
