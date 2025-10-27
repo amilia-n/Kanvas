@@ -427,3 +427,8 @@ DROP TRIGGER IF EXISTS majors_set_updated               ON majors;
 CREATE TRIGGER majors_set_updated
 BEFORE UPDATE ON majors
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS user_majors_max3                 ON user_majors;
+CREATE TRIGGER user_majors_max3
+BEFORE INSERT ON user_majors
+FOR EACH ROW EXECUTE FUNCTION enforce_max3_majors();
