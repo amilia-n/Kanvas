@@ -437,3 +437,8 @@ DROP TRIGGER IF EXISTS users_set_updated                ON users;
 CREATE TRIGGER users_set_updated
 BEFORE UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS enrollments_set_enrolled_at      ON enrollments;
+CREATE TRIGGER enrollments_set_enrolled_at
+BEFORE INSERT OR UPDATE ON enrollments
+FOR EACH ROW EXECUTE FUNCTION set_enrolled_at();
