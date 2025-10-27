@@ -192,6 +192,15 @@ BEGIN
       );
   END IF;
 END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'assignments_due_after_assigned_ck') THEN
+    ALTER TABLE assignments
+      ADD CONSTRAINT assignments_due_after_assigned_ck
+      CHECK (due_at::date >= assigned_on);
+  END IF;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
