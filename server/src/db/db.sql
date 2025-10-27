@@ -498,3 +498,8 @@ DROP TRIGGER IF EXISTS submissions_set_updated          ON submissions;
 CREATE TRIGGER submissions_set_updated
 BEFORE UPDATE ON submissions
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS submissions_recompute_final      ON submissions;
+CREATE TRIGGER submissions_recompute_final
+AFTER UPDATE OF grade_percent ON submissions
+FOR EACH ROW EXECUTE FUNCTION recompute_final_on_grade();
