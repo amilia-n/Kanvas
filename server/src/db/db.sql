@@ -291,6 +291,15 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+CREATE OR REPLACE FUNCTION set_dropped_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status = 'dropped' AND (TG_OP='INSERT' OR OLD.status IS DISTINCT FROM 'dropped') THEN
+    NEW.dropped_at := COALESCE(NEW.dropped_at, now());
+  END IF;
+  RETURN NEW;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
