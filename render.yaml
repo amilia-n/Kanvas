@@ -2,7 +2,7 @@ services:
   - type: web
     name: kanvas-app
     runtime: node
-    repo: https://github.com/your-username/kanvas
+    repo: https://github.com/amilia-n/Kanvas
     buildCommand: |
       cd server && npm install
       cd client && npm install && npm run build
