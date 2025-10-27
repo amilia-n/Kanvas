@@ -167,6 +167,20 @@ CREATE TABLE IF NOT EXISTS course_materials (
     uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 -- -------------------------
+-- Constraint wiring
+-- -------------------------
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_teacher_number_fkey') THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_teacher_number_fkey
+      FOREIGN KEY (teacher_number)
+      REFERENCES faculty_registry(teacher_number)
+      ON UPDATE CASCADE
+      ON DELETE RESTRICT;
+  END IF;
+END $$;
+-- -------------------------
 -- Indexes
 -- -------------------------
 CREATE INDEX IF NOT EXISTS idx_offering_term              ON course_offering (term_id);
