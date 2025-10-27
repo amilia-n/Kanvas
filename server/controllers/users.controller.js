@@ -107,3 +107,26 @@ export async function listAllMajors(req, res, next) {
     next(err);
   }
 }
+
+export async function listAllTerms(req, res, next) {
+  try {
+    const terms = await users.listTerms();
+    res.json(terms);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getCurrentTerm(req, res, next) {
+  try {
+    const term = await users.getCurrentTerm();
+    res.json(term);
+  } catch (err) { next(err); }
+}
+
+export async function getNextTerm(req, res, next) {
+  try {
+    const term = await users.getNextTerm();
+    res.json(term);
+  } catch (err) { next(err); }
+}
