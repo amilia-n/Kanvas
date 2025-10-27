@@ -300,6 +300,15 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+CREATE OR REPLACE FUNCTION set_denied_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status = 'denied' AND (TG_OP='INSERT' OR OLD.status IS DISTINCT FROM 'denied') THEN
+    NEW.denied_at := COALESCE(NEW.denied_at, now());
+  END IF;
+  RETURN NEW;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
