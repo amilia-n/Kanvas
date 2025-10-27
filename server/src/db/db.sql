@@ -272,6 +272,16 @@ BEGIN
 
   RETURN NEW;
 END $$;
+
+CREATE OR REPLACE FUNCTION set_final_percent_on_complete()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.status = 'completed' AND (TG_OP = 'UPDATE') AND (OLD.status IS DISTINCT FROM 'completed') THEN
+    NEW.final_percent := compute_final_percent(NEW.offering_id, NEW.student_id);
+    NEW.completed_at  := COALESCE(NEW.completed_at, now());
+  END IF;
+  RETURN NEW;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
