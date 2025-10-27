@@ -231,6 +231,25 @@ BEGIN
   WHERE a.offering_id = p_offering_id;
   RETURN COALESCE(pct, 0);
 END $$;
+
+CREATE OR REPLACE FUNCTION percent_to_gpa(pct NUMERIC)
+RETURNS NUMERIC LANGUAGE plpgsql IMMUTABLE AS $$
+BEGIN
+  RETURN CASE
+    WHEN pct >= 93 THEN 4.0
+    WHEN pct >= 90 THEN 3.7
+    WHEN pct >= 87 THEN 3.3
+    WHEN pct >= 83 THEN 3.0
+    WHEN pct >= 80 THEN 2.7
+    WHEN pct >= 77 THEN 2.3
+    WHEN pct >= 73 THEN 2.0
+    WHEN pct >= 70 THEN 1.7
+    WHEN pct >= 67 THEN 1.3
+    WHEN pct >= 63 THEN 1.0
+    WHEN pct >= 60 THEN 0.7
+    ELSE 0.0
+  END;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
