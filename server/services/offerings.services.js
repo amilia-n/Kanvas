@@ -168,3 +168,21 @@ export async function eligibleForStudent({ offering_id, student_id }) {
     },
   };
 }
+
+export async function getStudentOfferings(studentId) {
+  const { rows } = await pool.query(queries.getStudentOfferings, [studentId]);
+  return rows;
+}
+
+export async function getTeacherOfferings(teacherId) {
+  const { rows } = await pool.query(queries.getTeacherOfferings, [teacherId]);
+  return rows;
+}
+
+export async function isUserInOffering(offering_id, user_id) {
+  const { rows } = await pool.query(queries.isUserInOffering, [
+    offering_id,
+    user_id,
+  ]);
+  return !!rows[0]?.ok;
+}
