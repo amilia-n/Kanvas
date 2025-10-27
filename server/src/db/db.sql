@@ -218,6 +218,19 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+CREATE OR REPLACE FUNCTION compute_final_percent(p_offering_id BIGINT, p_student_id BIGINT)
+RETURNS NUMERIC LANGUAGE plpgsql AS $$
+DECLARE pct NUMERIC;
+BEGIN
+  SELECT ROUND(SUM(COALESCE(s.grade_percent,0) * a.weight_percent)/100.0, 2)
+    INTO pct
+  FROM assignments a
+  LEFT JOIN submissions s
+    ON s.assignment_id = a.id AND s.student_id = p_student_id
+  WHERE a.offering_id = p_offering_id;
+  RETURN COALESCE(pct, 0);
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
