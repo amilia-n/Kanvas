@@ -71,6 +71,16 @@ export async function findOffering(req, res, next) {
   } catch (err) { next(err); }
 }
 
+export async function listOfferingsForCourse(req, res, next) {
+  try {
+    const courseId = Number(req.params.courseId);
+    const result = await offerings.listOfferingsForCourse(courseId);  
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function offeringListWithSeats(req, res, next) {
   try {
     const rows = await offerings.offeringListWithSeats();
