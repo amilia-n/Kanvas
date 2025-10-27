@@ -453,6 +453,11 @@ CREATE TRIGGER enrollments_set_denied_at
 BEFORE INSERT OR UPDATE ON enrollments
 FOR EACH ROW EXECUTE FUNCTION set_denied_at();
 
+DROP TRIGGER IF EXISTS enrollments_set_waitlisted_at    ON enrollments;
+CREATE TRIGGER enrollments_set_waitlisted_at
+BEFORE INSERT OR UPDATE ON enrollments
+FOR EACH ROW EXECUTE FUNCTION set_waitlisted_at();
+
 DROP TRIGGER IF EXISTS enrollments_set_updated          ON enrollments;
 CREATE TRIGGER enrollments_set_updated
 BEFORE UPDATE ON enrollments
