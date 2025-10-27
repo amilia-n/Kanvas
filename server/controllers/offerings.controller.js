@@ -56,7 +56,6 @@ export async function getMyOfferings(req, res, next) {
     } else {
       result = await offerings.getStudentOfferings(userId);
     }
-    
     res.json(result);
   } catch (err) {
     next(err);
@@ -90,6 +89,58 @@ export async function offeringFilter(req, res, next) {
       limit: limit ? Number(limit) : null,
       offset: offset ? Number(offset) : null,
     });
+    res.json(rows);
+  } catch (err) { next(err); }
+}
+
+export async function studentHasPassedCourse(req, res, next) {
+  try {
+    const student_id = Number(req.query.student_id);
+    const course_id = Number(req.query.course_id);
+    const row = await offerings.studentHasPassedCourse(student_id, course_id);
+    res.json(row);
+  } catch (err) { next(err); }
+}
+
+export async function allPrereqsMetForCourse(req, res, next) {
+  try {
+    const student_id = Number(req.query.student_id);
+    const course_id = Number(req.query.course_id);
+    const row = await offerings.allPrereqsMetForCourse(student_id, course_id);
+    res.json(row);
+  } catch (err) { next(err); }
+}
+
+export async function eligibleForStudent(req, res, next) {
+  try {
+    const offeringId = Number(req.params.id);
+    const studentId  = Number(req.params.studentId);
+
+    const gate = await requireOfferingOwner(req, offeringId);
+    if (!gate.ok) return res.status(gate.code).json({ message: gate.message });
+
+    const result = await offerings.eligibleForStudent({ offering_id: offeringId, student_id: studentId });
+    res.json(result);
+  } catch (err) { next(err); }
+}
+
+
+export async function searchClassmates(req, res, next) {
+  try {
+    const offeringId = Number(req.params.id);
+    const q = req.query.q ?? null;
+
+    const isMember = await offerings.isUserInOffering(offeringId, req.user.id);
+    
+    const offering = await offerings.findOffering(offeringId);
+    const isTeacher = offering && offering.teacher_id === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!isMember && !isTeacher && !isAdmin) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+
+    const rows = await users.searchOfferingClassmates(offeringId, q);
     res.json(rows);
   } catch (err) { next(err); }
 }
