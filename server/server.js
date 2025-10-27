@@ -48,7 +48,7 @@ app.use("/api/submissions", submissionsRoutes);
 app.use(express.static(dist));
 
 // Catch-all route to serve index.html for client-side routing
-app.get('*', (req, res, next) => {
+app.get('/*', (req, res, next) => {
   // Skip API routes
   if (req.path.startsWith('/api/')) {
     return next();
