@@ -1,56 +1,40 @@
-# Monorepo: API (Node), SPA (static), and Postgres in one declarative file.
-
-previews:
-  generation: automatic   
-
 services:
-  # --- API (Express) ---
   - type: web
-    name: api
+    name: kanvas-app
     runtime: node
-    rootDir: server
-    plan: starter
+    repo: https://github.com/your-username/kanvas-backend
+    buildCommand: |
+      cd server && npm install
+      cd client && npm install && npm run build
+      mkdir -p ./server/public
+      cp -r ./client/dist/* ./server/public/
+    startCommand: cd server && node server.js
+    plan: free
     region: oregon
-    buildCommand: npm ci && npm run build --if-present
-    preDeployCommand: npm run db:setup:render
-    startCommand: npm run start
-    healthCheckPath: /healthz
     envVars:
-      # Use Render Postgres connection string (internal, low latency)
       - key: DATABASE_URL
         fromDatabase:
-          name: app-db
+          name: kanvas-db
           property: connectionString
       - key: NODE_ENV
         value: production
-      - key: JWT_SECRET
-        generateValue: true
-      - key: JWT_EXPIRES
-        value: "7d"
-      - key: CORS_ORIGIN
-        value: https://kanvas.onrender.com
       - key: PORT
-        value: "10000"
-
-  # --- SPA (React/Vite) ---
-  - type: web
-    name: web
-    runtime: static
-    rootDir: client
-    plan: free
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
-    # SPA rewrite so deep links work (e.g. /dashboard -> /index.html)
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      # Point your front-end at the API's public URL
-      - key: VITE_API_URL
-        value: https://api-kanvas.onrender.com/api
+        value: 10000
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES
+        value: 7d
+      - key: CORS_ORIGIN
+        value: https://kanvas-app.onrender.com
+    healthCheckPath: /api/auth/me
 
 databases:
-  - name: app-db
+  - name: kanvas-db
+    databaseName: kanvas
+    user: kanvas_user
     plan: free
     region: oregon
+    ipAllowList: []
+    postgresMajorVersion: "16"
+
+version: "1"
