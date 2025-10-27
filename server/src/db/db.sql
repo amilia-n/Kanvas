@@ -493,3 +493,8 @@ CREATE TRIGGER assignments_weights_guard
 BEFORE INSERT OR UPDATE OF weight_percent, offering_id
 ON assignments
 FOR EACH ROW EXECUTE FUNCTION enforce_assignment_weights_total_max();
+
+DROP TRIGGER IF EXISTS submissions_set_updated          ON submissions;
+CREATE TRIGGER submissions_set_updated
+BEFORE UPDATE ON submissions
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
