@@ -452,3 +452,8 @@ DROP TRIGGER IF EXISTS enrollments_set_denied_at        ON enrollments;
 CREATE TRIGGER enrollments_set_denied_at
 BEFORE INSERT OR UPDATE ON enrollments
 FOR EACH ROW EXECUTE FUNCTION set_denied_at();
+
+DROP TRIGGER IF EXISTS courses_set_updated              ON courses;
+CREATE TRIGGER courses_set_updated
+BEFORE UPDATE ON courses
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
