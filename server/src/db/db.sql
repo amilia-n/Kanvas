@@ -250,6 +250,28 @@ BEGIN
     ELSE 0.0
   END;
 END $$;
+
+CREATE OR REPLACE FUNCTION recompute_final_on_grade()
+RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_offering_id BIGINT;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.grade_percent IS NOT DISTINCT FROM OLD.grade_percent THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT a.offering_id INTO v_offering_id
+  FROM assignments a
+  WHERE a.id = NEW.assignment_id;
+
+  UPDATE enrollments e
+  SET final_percent = compute_final_percent(v_offering_id, NEW.student_id),
+      updated_at    = now()
+  WHERE e.offering_id = v_offering_id
+    AND e.student_id  = NEW.student_id
+    AND e.status      = 'completed';
+
+  RETURN NEW;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
