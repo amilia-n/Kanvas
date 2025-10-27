@@ -188,3 +188,6 @@ CREATE INDEX IF NOT EXISTS idx_assignments_offering_weight ON assignments (offer
 
 CREATE INDEX IF NOT EXISTS idx_submissions_assignment     ON submissions (assignment_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_student        ON submissions (student_id);
+
+CREATE INDEX IF NOT EXISTS idx_faculty_email              ON faculty_registry (email);
+CREATE INDEX IF NOT EXISTS idx_faculty_tnum               ON faculty_registry (teacher_number);
