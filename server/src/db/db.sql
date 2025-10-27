@@ -180,6 +180,18 @@ BEGIN
       ON DELETE RESTRICT;
   END IF;
 END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_role_consistency') THEN
+    ALTER TABLE users
+      ADD CONSTRAINT users_role_consistency CHECK (
+        (role = 'teacher' AND teacher_number IS NOT NULL)
+        OR (role = 'student' AND teacher_number IS NULL)
+        OR (role = 'admin')
+      );
+  END IF;
+END $$;
 -- -------------------------
 -- Indexes
 -- -------------------------
