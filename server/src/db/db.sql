@@ -457,3 +457,8 @@ DROP TRIGGER IF EXISTS courses_set_updated              ON courses;
 CREATE TRIGGER courses_set_updated
 BEFORE UPDATE ON courses
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+DROP TRIGGER IF EXISTS offering_set_updated             ON course_offering;
+CREATE TRIGGER offering_set_updated
+BEFORE UPDATE ON course_offering
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
