@@ -128,12 +128,15 @@ const CURRENT = [
 async function q(c, sql, p) {
   return c.query(sql, p);
 }
+
 async function getId(c, sql, arg) {
   const r = await q(c, sql, [arg]);
   return r.rowCount ? r.rows[0].id : null;
 }
+
 const getTermId = (c, code) =>
   getId(c, `SELECT id FROM terms WHERE code=$1`, code);
+
 const getUserIdByEmail = (c, email) =>
   getId(c, `SELECT id FROM users WHERE email=$1`, email);
 
@@ -141,6 +144,7 @@ function deptFromOfferingCode(code) {
   const m = code.match(/^[A-Z]+/);
   return m ? m[0] : null;
 }
+
 function teacherEmailByDept(dept) {
   if (!dept) return null;
   if (/^CEE/.test(dept) || /^ARCH/.test(dept)) return "ghop@faculty.kanvas.edu";
@@ -167,6 +171,7 @@ async function resolveCourseIdFromOfferingCode(c, code) {
   );
   return rows[0]?.id || null;
 }
+
 async function getCanonicalMeta(c, code) {
   const r = await q(
     c,
@@ -187,6 +192,7 @@ async function getCanonicalMeta(c, code) {
     course_id,
   };
 }
+
 async function getOfferingIdByCodeTermSection(c, { code, term, section }) {
   const { rows } = await q(
     c,
@@ -199,6 +205,7 @@ async function getOfferingIdByCodeTermSection(c, { code, term, section }) {
   );
   return rows[0]?.id || null;
 }
+
 async function ensureHistoricalOffering(
   c,
   { code, term, section = "A", seats = 200 }
@@ -258,6 +265,7 @@ async function upsertTeacherUsers(c, pwHash) {
     );
   }
 }
+
 async function upsertStudentUsers(c, pwHash) {
   for (const [first, last, email, major_code, student_number] of students) {
     await q(
@@ -283,4 +291,80 @@ async function upsertStudentUsers(c, pwHash) {
       );
     }
   }
+}
+
+async function addMaterials(c, offeringId, teacherEmail, materials) {
+  const teacherId = teacherEmail
+    ? await getUserIdByEmail(c, teacherEmail)
+    : null;
+  for (const [title, url] of materials) {
+    await q(
+      c,
+      `INSERT INTO course_materials (offering_id, title, url, uploaded_by)
+       VALUES ($1,$2,$3,$4)
+       ON CONFLICT DO NOTHING`,
+      [offeringId, title, url, teacherId]
+    );
+  }
+}
+
+async function addAssignments(c, offeringId, pack, termCode) {
+  const termId = await getTermId(c, termCode);
+  const { rows } = await q(
+    c,
+    `SELECT starts_on, ends_on FROM terms WHERE id=$1`,
+    [termId]
+  );
+  if (!rows.length) return;
+  const { starts_on, ends_on } = rows[0];
+  const toDate = (d) => d.toISOString().slice(0, 10);
+  const start = new Date(starts_on),
+    end = new Date(ends_on);
+  const day = 86_400_000,
+    totalDays = Math.max(1, Math.round((end - start) / day));
+
+  for (let i = 0; i < pack.length; i++) {
+    const [title, weight] = pack[i];
+    const dueOffset = Math.floor((totalDays / (pack.length + 1)) * (i + 1));
+    const dueAt = new Date(start.getTime() + dueOffset * day);
+    let assignedOn = new Date(dueAt.getTime() - 7 * day);
+    if (assignedOn < start) assignedOn = new Date(start);
+    if (dueAt <= assignedOn) dueAt.setDate(assignedOn.getDate() + 1);
+    await q(
+      c,
+      `INSERT INTO assignments (offering_id, title, description, weight_percent, assigned_on, due_at)
+       VALUES ($1,$2,NULL,$3,$4::date,$5)
+       ON CONFLICT DO NOTHING`,
+      [offeringId, title, weight, toDate(assignedOn), dueAt.toISOString()]
+    );
+  }
+}
+
+async function enrollStudents(c, offeringId, emails) {
+  for (const email of emails) {
+    const sid = await getUserIdByEmail(c, email);
+    if (!sid) continue;
+    await q(
+      c,
+      `INSERT INTO enrollments (offering_id, student_id, status, enrolled_at)
+       VALUES ($1,$2,'enrolled', now())
+       ON CONFLICT (offering_id, student_id) DO UPDATE
+         SET status='enrolled',
+             enrolled_at=COALESCE(enrollments.enrolled_at, now()),
+             updated_at=now()`,
+      [offeringId, sid]
+    );
+  }
+}
+
+async function filterOfferings(c, { code, term, section }) {
+  const result = await c.query(
+    `SELECT co.id
+     FROM course_offering co
+     JOIN terms t ON t.id=co.term_id
+     WHERE co.code=$1 AND t.code=$2 AND co.section=$3
+     LIMIT 1`,
+    [code, term, section]
+  );
+  return result.rows[0]?.id || null;
 }
