@@ -9,11 +9,19 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
     CREATE TYPE user_role AS ENUM ('admin','teacher','student');
   END IF;
-  
+
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enrollment_status') THEN
     CREATE TYPE enrollment_status AS ENUM ('enrolled','dropped','completed','waitlisted','denied');
   END IF;
 END $$;
+
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END $$;
+
 -- -------------------------
 -- Tables
 -- -------------------------
