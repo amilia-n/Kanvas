@@ -9,7 +9,7 @@ r.post('/', requireAuth, requireAdmin, c.createUser);
 r.get('/:id', requireAuth, requireSelfOrAdmin(), c.getUser);
 r.patch('/:id', requireAuth, requireSelfOrAdmin(), c.updateUser);
 r.delete('/:id', requireAuth, requireAdmin, c.deleteUser);
-
+r.get('/majors/all', requireAuth, c.listAllMajors);
 r.get('/:id/majors', requireAuth, requireSelfOrAdmin(), c.listUserMajors);
 r.post('/:id/majors', requireAuth, requireSelfOrAdmin(), c.addUserMajor);
 r.delete('/:id/majors/:code', requireAuth, requireSelfOrAdmin(), c.removeUserMajor);
