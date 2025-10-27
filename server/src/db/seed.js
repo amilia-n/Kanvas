@@ -369,14 +369,14 @@ async function filterOfferings(c, { code, term, section }) {
   return result.rows[0]?.id || null;
 }
 
-const TARGET_PAST_TERM = "SPRING25"; 
+const TARGET_PAST_TERM = "SPRING25";
 const HIST_SECTION = "P";
 const HIST_ASSIGN_PACK = [
-  ["Quiz",   10],
-  ["HW 1",   20],
-  ["Essay 1",20],
-  ["HW 2",   20],
-  ["Final",  30],
+  ["Quiz", 10],
+  ["HW 1", 20],
+  ["Essay 1", 20],
+  ["HW 2", 20],
+  ["Final", 30],
 ];
 
 async function seedPastAssignmentsForAllOfferings(c) {
@@ -392,28 +392,27 @@ async function seedPastAssignmentsForAllOfferings(c) {
 
   let created = 0;
   for (const r of rows) {
-
     await addAssignments(c, r.offering_id, HIST_ASSIGN_PACK, r.term_code);
-    
+
     await enrollStudents(c, r.offering_id, ALL_STUDENT_EMAILS);
-    
+
     const teacherEmail = teacherEmailByDept(deptFromOfferingCode(r.code));
-    await gradeAllAssignmentsRandomized(c, { 
-      offeringId: r.offering_id, 
-      courseCode: r.code, 
-      teacherEmail 
+    await gradeAllAssignmentsRandomized(c, {
+      offeringId: r.offering_id,
+      courseCode: r.code,
+      teacherEmail,
     });
-    
+
     await completeEnrollmentsForOffering(c, r.offering_id, r.term_code);
-    
+
     created++;
   }
   return created;
 }
 
-async function getAllPrereqCodes(c){
-  const currentCodes = CURRENT.map(obj => obj.code);
-  
+async function getAllPrereqCodes(c) {
+  const currentCodes = CURRENT.map((obj) => obj.code);
+
   const { rows } = await q(
     c,
     `SELECT DISTINCT co.code AS code
@@ -423,14 +422,25 @@ async function getAllPrereqCodes(c){
      ORDER BY co.code`,
     [currentCodes]
   );
-  return rows.map(r => r.code);
+  return rows.map((r) => r.code);
 }
 
-function randomPassing(){ return Math.min(99, 82 + Math.floor(Math.random()*18)); } 
+function randomPassing() {
+  return Math.min(99, 82 + Math.floor(Math.random() * 18));
+}
 
-async function gradeAllAssignmentsRandomized(c, { offeringId, courseCode, teacherEmail }){
-  const teacherId = teacherEmail ? await getUserIdByEmail(c, teacherEmail) : null;
-  const a = await q(c, `SELECT id, title, due_at FROM assignments WHERE offering_id=$1 ORDER BY id`, [offeringId]);
+async function gradeAllAssignmentsRandomized(
+  c,
+  { offeringId, courseCode, teacherEmail }
+) {
+  const teacherId = teacherEmail
+    ? await getUserIdByEmail(c, teacherEmail)
+    : null;
+  const a = await q(
+    c,
+    `SELECT id, title, due_at FROM assignments WHERE offering_id=$1 ORDER BY id`,
+    [offeringId]
+  );
   const st = await q(
     c,
     `SELECT e.student_id, u.email
@@ -438,12 +448,14 @@ async function gradeAllAssignmentsRandomized(c, { offeringId, courseCode, teache
      WHERE e.offering_id=$1 AND e.status IN ('enrolled','completed')`,
     [offeringId]
   );
-  for (const s of st.rows){
-    for (const asn of a.rows){
+  for (const s of st.rows) {
+    for (const asn of a.rows) {
       const handle = s.email.split("@")[0];
-      const url = `https://files.example.com/${courseCode}/${encodeURIComponent(asn.title)}/${handle}.pdf`;
+      const url = `https://files.example.com/${courseCode}/${encodeURIComponent(
+        asn.title
+      )}/${handle}.pdf`;
       const due = new Date(asn.due_at);
-      const submittedAt = new Date(due.getTime() - 24*60*60*1000);
+      const submittedAt = new Date(due.getTime() - 24 * 60 * 60 * 1000);
       await q(
         c,
         `INSERT INTO submissions (assignment_id, student_id, submission_url, submitted_at)
@@ -465,9 +477,11 @@ async function gradeAllAssignmentsRandomized(c, { offeringId, courseCode, teache
   }
 }
 
-async function completeEnrollmentsForOffering(c, offeringId, termCode){
+async function completeEnrollmentsForOffering(c, offeringId, termCode) {
   const termId = await getTermId(c, termCode);
-  const { rows } = await q(c, `SELECT ends_on FROM terms WHERE id=$1`, [termId]);
+  const { rows } = await q(c, `SELECT ends_on FROM terms WHERE id=$1`, [
+    termId,
+  ]);
   const endsOn = rows[0]?.ends_on;
   await q(
     c,
@@ -476,22 +490,24 @@ async function completeEnrollmentsForOffering(c, offeringId, termCode){
          completed_at=$2::timestamp,
          updated_at=now()
      WHERE offering_id=$1`,
-    [offeringId, endsOn ?? new Date().toISOString().slice(0,10)]
+    [offeringId, endsOn ?? new Date().toISOString().slice(0, 10)]
   );
 }
 
-async function backfillAllPrereqHistory(c){
+async function backfillAllPrereqHistory(c) {
   const codes = await getAllPrereqCodes(c);
   if (!codes.length) return;
   const termId = await getTermId(c, TARGET_PAST_TERM);
-  if (!termId){
-    console.warn(`Term ${TARGET_PAST_TERM} not found; skipping prereq backfill.`);
+  if (!termId) {
+    console.warn(
+      `Term ${TARGET_PAST_TERM} not found; skipping prereq backfill.`
+    );
     return;
   }
   const emails = ALL_STUDENT_EMAILS;
-  for (const code of codes){
+  for (const code of codes) {
     const teacherEmail = teacherEmailByDept(deptFromOfferingCode(code));
-    
+
     const { rows: existingRows } = await q(
       c,
       `SELECT co.id, co.section
@@ -501,39 +517,66 @@ async function backfillAllPrereqHistory(c){
        LIMIT 1`,
       [code, TARGET_PAST_TERM]
     );
-    
+
     let offId, section;
     if (existingRows.length > 0) {
       offId = existingRows[0].id;
       section = existingRows[0].section;
-      console.log(`[HIST] Using existing ${code} ${TARGET_PAST_TERM} section ${section}`);
+      console.log(
+        `[HIST] Using existing ${code} ${TARGET_PAST_TERM} section ${section}`
+      );
     } else {
-      offId = await ensureHistoricalOffering(c, { code, term: TARGET_PAST_TERM, section: HIST_SECTION, seats: 200 });
+      offId = await ensureHistoricalOffering(c, {
+        code,
+        term: TARGET_PAST_TERM,
+        section: HIST_SECTION,
+        seats: 200,
+      });
       section = HIST_SECTION;
     }
-    
-    if (!offId){
-      console.warn(`Could not create historical offering for ${code} ${TARGET_PAST_TERM}`);
+
+    if (!offId) {
+      console.warn(
+        `Could not create historical offering for ${code} ${TARGET_PAST_TERM}`
+      );
       continue;
     }
-    
+
     await addMaterials(c, offId, teacherEmail, [
-      [`Syllabus (${code} ${TARGET_PAST_TERM})`, `https://materials.example.com/${code.toLowerCase()}/${TARGET_PAST_TERM.toLowerCase()}/syllabus.pdf`],
-      [`Week 1 Slides (${code})`,               `https://materials.example.com/${code.toLowerCase()}/${TARGET_PAST_TERM.toLowerCase()}/wk1-slides.pdf`],
+      [
+        `Syllabus (${code} ${TARGET_PAST_TERM})`,
+        `https://materials.example.com/${code.toLowerCase()}/${TARGET_PAST_TERM.toLowerCase()}/syllabus.pdf`,
+      ],
+      [
+        `Week 1 Slides (${code})`,
+        `https://materials.example.com/${code.toLowerCase()}/${TARGET_PAST_TERM.toLowerCase()}/wk1-slides.pdf`,
+      ],
     ]);
     await addAssignments(c, offId, HIST_ASSIGN_PACK, TARGET_PAST_TERM);
     await enrollStudents(c, offId, emails);
-    await gradeAllAssignmentsRandomized(c, { offeringId: offId, courseCode: code, teacherEmail });
+    await gradeAllAssignmentsRandomized(c, {
+      offeringId: offId,
+      courseCode: code,
+      teacherEmail,
+    });
     await completeEnrollmentsForOffering(c, offId, TARGET_PAST_TERM);
-    console.log(`[HIST] Backfilled ${code} ${TARGET_PAST_TERM} section ${section}`);
+    console.log(
+      `[HIST] Backfilled ${code} ${TARGET_PAST_TERM} section ${section}`
+    );
   }
 }
 
-async function seedCurrent(c){
-  for (const cobj of CURRENT){
-    const offeringId = await filterOfferings(c, { code: cobj.code, term: cobj.term, section: cobj.section });
-    if (!offeringId){
-      console.warn(`Skipping ${cobj.code} ${cobj.term} ${cobj.section}: not found`);
+async function seedCurrent(c) {
+  for (const cobj of CURRENT) {
+    const offeringId = await filterOfferings(c, {
+      code: cobj.code,
+      term: cobj.term,
+      section: cobj.section,
+    });
+    if (!offeringId) {
+      console.warn(
+        `Skipping ${cobj.code} ${cobj.term} ${cobj.section}: not found`
+      );
       continue;
     }
     await addMaterials(c, offeringId, cobj.teacher_email, cobj.materials);
@@ -544,8 +587,12 @@ async function seedCurrent(c){
 
 async function seedMockSubmissions(c) {
   console.log("Creating 5 mock submissions for CS201-L assignments...");
-  
-  const offeringId = await filterOfferings(c, { code: "CS201", term: "FALL25", section: "L" });
+
+  const offeringId = await filterOfferings(c, {
+    code: "CS201",
+    term: "FALL25",
+    section: "L",
+  });
   if (!offeringId) {
     console.warn("CS201-L not found, skipping mock submissions");
     return;
@@ -582,9 +629,11 @@ async function seedMockSubmissions(c) {
   for (const assignment of assignments) {
     for (const student of students) {
       const handle = student.email.split("@")[0];
-      const url = `https://files.example.com/CS201/${encodeURIComponent(assignment.title)}/${handle}.pdf`;
+      const url = `https://files.example.com/CS201/${encodeURIComponent(
+        assignment.title
+      )}/${handle}.pdf`;
       const due = new Date(assignment.due_at);
-      const submittedAt = new Date(due.getTime() - 48 * 60 * 60 * 1000); 
+      const submittedAt = new Date(due.getTime() - 48 * 60 * 60 * 1000);
 
       await q(
         c,
@@ -597,7 +646,98 @@ async function seedMockSubmissions(c) {
     }
   }
 
-  console.log(`✓ Created ${count} mock submissions (5 students × ${assignments.length} assignments)`);
-  console.log(`  Students: ${students.map(s => `${s.first_name} ${s.last_name}`).join(", ")}`);
-  console.log(`  Assignments: ${assignments.map(a => a.title).join(", ")}`);
+  console.log(
+    `✓ Created ${count} mock submissions (5 students × ${assignments.length} assignments)`
+  );
+  console.log(
+    `  Students: ${students
+      .map((s) => `${s.first_name} ${s.last_name}`)
+      .join(", ")}`
+  );
+  console.log(`  Assignments: ${assignments.map((a) => a.title).join(", ")}`);
 }
+
+// ---------- main ----------
+async function main() {
+  const client = await pool.connect();
+  try {
+    console.log("Seeding users (teachers + students) via upsert …");
+    const pwHash = await argon2.hash(DEFAULT_PW);
+    await client.query("BEGIN");
+
+    await upsertTeacherUsers(client, pwHash);
+    await upsertStudentUsers(client, pwHash);
+
+    console.log("Assigning teachers to existing offerings…");
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='ghop@faculty.kanvas.edu' AND co.code LIKE 'CEE%'  AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='csha@faculty.kanvas.edu' AND co.code LIKE 'MECH%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='nwir@faculty.kanvas.edu' AND co.code LIKE 'MSE%'  AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='ghop@faculty.kanvas.edu' AND co.code LIKE 'ARCH%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='atur@faculty.kanvas.edu' AND co.code LIKE 'CHEM%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='dknu@faculty.kanvas.edu' AND co.code LIKE 'CS%'   AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='enoe@faculty.kanvas.edu' AND co.code LIKE 'BIOL%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='blis@faculty.kanvas.edu' AND co.code LIKE 'PHYS%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='alov@faculty.kanvas.edu' AND co.code LIKE 'BCS%'  AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='atur@faculty.kanvas.edu' AND co.code LIKE 'CHEME%'AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='jbac@faculty.kanvas.edu' AND co.code LIKE 'ECON%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='hlam@faculty.kanvas.edu' AND co.code LIKE 'AERO%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='alov@faculty.kanvas.edu' AND co.code LIKE 'POLS%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='blis@faculty.kanvas.edu' AND co.code LIKE 'MATH%' AND co.teacher_id IS NULL;`
+    );
+    await client.query(
+      `UPDATE course_offering co SET teacher_id=u.id FROM users u WHERE u.email='enoe@faculty.kanvas.edu' AND co.code LIKE 'BIOE%' AND co.teacher_id IS NULL;`
+    );
+
+    console.log("Backfilling historical prerequisite completions…");
+    await backfillAllPrereqHistory(client);
+
+    console.log(
+      "Creating 5 assignments for all other past offerings lacking them…"
+    );
+    const createdCount = await seedPastAssignmentsForAllOfferings(client);
+    console.log(`Created assignments for ${createdCount} past offerings.`);
+
+    console.log(
+      "Seeding current FALL25 Knuth offerings (open assignments, all students)…"
+    );
+    await seedCurrent(client);
+    await seedMockSubmissions(client);
+    await client.query("COMMIT");
+    console.log("Seed complete");
+    console.log(`Default password for all seeded users: ${DEFAULT_PW}`);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Seed failed:", err);
+    process.exitCode = 1;
+  } finally {
+    client.release();
+  }
+}
+main();
