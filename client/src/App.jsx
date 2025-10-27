@@ -4,7 +4,7 @@ import LoginPage from "./features/auth/LoginPage";
 import LogoutPage from "./features/auth/LogoutPage";
 import ResetPasswordPage from "./features/auth/ResetPasswordPage";
 
-import MyOfferingsPage from "./features/auth/myOfferings";
+import MyOfferingsPage from "./features/auth/MyOfferings";
 import CourseMaterialPage from "./features/materials/CourseMaterial";
 import CoursesPage from "./features/courses/CoursesPage";
 import CourseDetailPage from "./features/courses/CourseDetailPage";

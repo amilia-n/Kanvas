@@ -4,8 +4,8 @@ services:
     runtime: node
     repo: https://github.com/amilia-n/Kanvas
     buildCommand: |
-      cd server && npm install
-      cd ../client && npm install && npm run build
+      cd server && npm ci
+      cd ../client && npm ci && npm run build
     startCommand: cd server && node server.js
     plan: free
     region: oregon
