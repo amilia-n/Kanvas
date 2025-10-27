@@ -509,3 +509,24 @@ CREATE TRIGGER submissions_require_enrollment
 BEFORE INSERT OR UPDATE OF assignment_id, student_id
 ON submissions
 FOR EACH ROW EXECUTE FUNCTION enforce_submission_enrollment();
+
+-- -----------------
+-- Safe migrations 
+-- -----------------
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_offering_code_term') THEN
+    ALTER TABLE course_offering DROP CONSTRAINT uq_offering_code_term;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'course_offering_course_id_term_id_section_key') THEN
+    ALTER TABLE course_offering DROP CONSTRAINT course_offering_course_id_term_id_section_key;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_offering_code_term_section') THEN
+    ALTER TABLE course_offering
+      ADD CONSTRAINT uq_offering_code_term_section UNIQUE (code, term_id, section);
+  END IF;
+END $$;
+
+COMMIT;
