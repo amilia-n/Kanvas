@@ -463,6 +463,12 @@ CREATE TRIGGER enrollments_set_updated
 BEFORE UPDATE ON enrollments
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
+DROP TRIGGER IF EXISTS enrollments_set_final_on_complete ON enrollments;
+CREATE TRIGGER enrollments_set_final_on_complete
+BEFORE UPDATE OF status ON enrollments
+FOR EACH ROW EXECUTE FUNCTION set_final_percent_on_complete();
+
+
 DROP TRIGGER IF EXISTS courses_set_updated              ON courses;
 CREATE TRIGGER courses_set_updated
 BEFORE UPDATE ON courses
