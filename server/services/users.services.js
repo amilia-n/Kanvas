@@ -36,7 +36,6 @@ export async function deleteUser(id) {
   return { ok: true };
 }
 
-
 export async function listUserMajors(user_id) {
   const { rows } = await pool.query(queries.listUserMajors, [user_id]);
   return rows.map(r => r.major_code);
@@ -65,4 +64,24 @@ export async function replaceUserMajors(user_id, codes) {
 export async function listMajors() {
   const { rows } = await pool.query(queries.listMajors);
   return rows;
+}
+
+export async function listTerms() {
+  const { rows } = await pool.query(queries.listTerms);
+  return rows;
+}
+
+export async function findTermByCode(code) {
+  const { rows } = await pool.query(queries.findTermByCode, [code]);
+  return rows[0];
+}
+
+export async function getCurrentTerm() {
+  const { rows } = await pool.query(queries.getCurrentTerm);
+  return rows[0];
+}
+
+export async function getNextTerm() {
+  const { rows } = await pool.query(queries.getNextTerm);
+  return rows[0];
 }
