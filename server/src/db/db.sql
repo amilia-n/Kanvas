@@ -432,3 +432,8 @@ DROP TRIGGER IF EXISTS user_majors_max3                 ON user_majors;
 CREATE TRIGGER user_majors_max3
 BEFORE INSERT ON user_majors
 FOR EACH ROW EXECUTE FUNCTION enforce_max3_majors();
+
+DROP TRIGGER IF EXISTS users_set_updated                ON users;
+CREATE TRIGGER users_set_updated
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
