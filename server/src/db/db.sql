@@ -191,3 +191,5 @@ CREATE INDEX IF NOT EXISTS idx_submissions_student        ON submissions (studen
 
 CREATE INDEX IF NOT EXISTS idx_faculty_email              ON faculty_registry (email);
 CREATE INDEX IF NOT EXISTS idx_faculty_tnum               ON faculty_registry (teacher_number);
+
+CREATE INDEX IF NOT EXISTS idx_user_majors_major          ON user_majors (major_code);
