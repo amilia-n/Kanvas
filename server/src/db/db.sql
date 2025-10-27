@@ -468,6 +468,10 @@ CREATE TRIGGER enrollments_set_final_on_complete
 BEFORE UPDATE OF status ON enrollments
 FOR EACH ROW EXECUTE FUNCTION set_final_percent_on_complete();
 
+DROP TRIGGER IF EXISTS enrollments_enforce_retake        ON enrollments;
+CREATE TRIGGER enrollments_enforce_retake
+BEFORE INSERT ON enrollments
+FOR EACH ROW EXECUTE FUNCTION enforce_retake_policy();
 
 DROP TRIGGER IF EXISTS courses_set_updated              ON courses;
 CREATE TRIGGER courses_set_updated
