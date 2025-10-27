@@ -559,7 +559,97 @@ export const queries = {
   // ============
   // ENROLLMENTS
   // ============
-
+  enrollmentStatus: `
+  SELECT status
+  FROM enrollments
+  WHERE offering_id = $1 AND student_id = $2
+  LIMIT 1;
+`,
+  requestWaitlist: `
+    INSERT INTO enrollments (offering_id, student_id, status)
+    VALUES ($1, $2, 'waitlisted')
+    ON CONFLICT (offering_id, student_id)
+      DO UPDATE SET status='waitlisted',
+                    waitlisted_at=COALESCE(enrollments.waitlisted_at, now()),
+                    updated_at=now()
+    RETURNING id;
+  `,
+  selfCancelWaitlist: `
+    DELETE FROM enrollments
+    WHERE offering_id=$1 AND student_id=$2 AND status='waitlisted'
+    RETURNING id;
+  `,
+  approveFromWaitlist: `
+  WITH caps AS (
+    SELECT co.id, co.total_seats,
+           (SELECT COUNT(*) FROM enrollments e WHERE e.offering_id=co.id AND e.status='enrolled') AS taken
+    FROM course_offering co
+    WHERE co.id = $1
+    FOR UPDATE
+  )
+  INSERT INTO enrollments (offering_id, student_id, status, enrolled_at)
+  SELECT $1, $2, 'enrolled', now()
+  FROM caps
+  WHERE caps.taken < caps.total_seats
+  ON CONFLICT (offering_id, student_id) 
+    DO UPDATE SET 
+      status = 'enrolled', 
+      enrolled_at = COALESCE(enrollments.enrolled_at, now()), 
+      updated_at = now()
+        WHERE enrollments.status IN ('waitlisted', 'denied', 'dropped')
+      AND (SELECT COUNT(*) FROM enrollments e WHERE e.offering_id=$1 AND e.status='enrolled') < 
+          (SELECT total_seats FROM course_offering WHERE id=$1)
+  RETURNING id;
+`,
+  denyWaitlist: `
+    UPDATE enrollments
+    SET status='denied', denied_at=now(), updated_at=now()
+    WHERE offering_id=$1 AND student_id=$2 AND status IN ('waitlisted','denied')
+    RETURNING id;
+  `,
+  dropEnrollment: `
+    UPDATE enrollments
+    SET status='dropped', dropped_at=now(), updated_at=now()
+    WHERE offering_id=$1 AND student_id=$2 AND status='enrolled'
+    RETURNING id;
+  `,
+  markCompleted: `
+    UPDATE enrollments
+    SET status='completed', completed_at=now(), updated_at=now()
+    WHERE offering_id=$1 AND student_id=$2 AND status='enrolled'
+    RETURNING id;
+  `,
+  listWaitlist: `
+    SELECT e.student_id, u.first_name, u.last_name, u.email, e.waitlisted_at
+    FROM enrollments e
+    JOIN users u ON u.id = e.student_id
+    WHERE e.offering_id = $1 AND e.status='waitlisted'
+    ORDER BY e.waitlisted_at ASC;
+  `,
+  seatsLeft: `
+    SELECT co.id AS offering_id,
+           co.total_seats - COALESCE((
+             SELECT COUNT(*) FROM enrollments e
+             WHERE e.offering_id = co.id AND e.status='enrolled'
+           ),0) AS seats_left
+    FROM course_offering co
+    WHERE co.id = $1;
+  `,
+  listEnrolled: `
+  SELECT e.student_id, e.status, e.enrolled_at, e.final_percent,
+         u.first_name, u.last_name, u.email, u.student_number
+  FROM enrollments e
+  JOIN users u ON u.id = e.student_id
+  WHERE e.offering_id = $1 AND e.status IN ('enrolled', 'completed')
+  ORDER BY u.last_name, u.first_name;
+`,
+  updateFinalGrade: `
+  UPDATE enrollments
+  SET final_percent = $3,
+      updated_at = now()
+  WHERE offering_id = $1 AND student_id = $2
+  RETURNING *;
+`,
   // =========================
   // ASSIGNMENTS & SUBMISSIONS
   // =========================
