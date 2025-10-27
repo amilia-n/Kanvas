@@ -20,7 +20,7 @@ r.get('/course/:courseId', requireAuth, c.listOfferingsForCourse);
 r.get('/:id/eligible/:studentId', requireAuth, requireRole('admin','teacher'), c.eligibleForStudent);
 r.get('/:id/classmates/search', requireAuth, c.searchClassmates);
 
-
-
+r.get('/:id', requireAuth, c.findOffering);
+r.get('/', requireAuth, c.offeringListWithSeats);
 
 export default r;
