@@ -1,3 +1,8 @@
+SET search_path = public;
+
+BEGIN;
+
+CREATE EXTENSION IF NOT EXISTS citext;
 -- -------------------------
 -- Tables
 -- -------------------------
