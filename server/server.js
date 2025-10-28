@@ -47,7 +47,7 @@ app.use("/api/submissions", submissionsRoutes);
 // Serve static files from the client build
 app.use(express.static(dist));
 
-app.get('*', (req, res, next) => {
+app.get('/:path(*)', (req, res, next) => {
   // Skip API routes
   if (req.path.startsWith('/api/')) {
     return next();
