@@ -7,7 +7,6 @@ Try logging in as Mr. Donald Knuth, our CS teacher!<br>
 Username: `dknu@faculty.kanvas.edu`<br>
 Password: `password123`<br>
 For other users, check the `seed.js`.
----
 
 ## Table of Contents
 
