@@ -47,8 +47,8 @@ app.use("/api/submissions", submissionsRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-app.use(express.static(dist));
-app.get('*', (_, res) => res.sendFile(path.join(dist, 'index.html')));
+// app.use(express.static(dist));
+// app.get('*', (_, res) => res.sendFile(path.join(dist, 'index.html')));
 
 const port = Number(config.PORT) || 8888;
 app.listen(port, () => {

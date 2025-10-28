@@ -6,7 +6,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -38,8 +38,39 @@
   body {
     @apply bg-background text-foreground;
   }
-}
+  input,
+  textarea,
+  select {
+    @apply bg-background text-foreground border border-input;
+  }
 
+  input::placeholder,
+  textarea::placeholder {
+    color: hsl(var(--muted-foreground));
+    opacity: 1;
+  }
+
+  input:not(:placeholder-shown)::placeholder,
+  textarea:not(:placeholder-shown)::placeholder {
+    color: transparent;
+  }
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  [role="button"],
+  [data-radix-popover-trigger],
+  [data-radix-dropdown-menu-trigger],
+  a[href] {
+    cursor: pointer;
+  }
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+  }
+}
 
 [data-radix-popper-content-wrapper] {
   z-index: 50 !important;
@@ -93,19 +124,15 @@ button[class*="bg-primary"]:active:not(:disabled) {
 }
 
 button[class*="variant-outline"],
-button[class*="variant=\"outline\""] {
+button[class*='variant="outline"'] {
   border: 2px solid hsl(var(--border));
   background: transparent;
 }
 
 button[class*="variant-outline"]:hover:not(:disabled),
-button[class*="variant=\"outline\""]:hover:not(:disabled) {
+button[class*='variant="outline"']:hover:not(:disabled) {
   background: hsl(var(--accent)) !important;
   border-color: hsl(var(--primary) / 0.5);
-}
-
-button[class*="bg-destructive"] {
-  border: 2px solid hsl(var(--destructive));
 }
 
 button[class*="bg-destructive"]:hover:not(:disabled) {
@@ -125,25 +152,24 @@ button[class*="bg-secondary"]:hover:not(:disabled) {
 }
 
 button[class*="variant-ghost"],
-button[class*="variant=\"ghost\""] {
+button[class*='variant="ghost"'] {
   border: 2px solid transparent;
 }
 
 button[class*="variant-ghost"]:hover:not(:disabled),
-button[class*="variant=\"ghost\""]:hover:not(:disabled) {
+button[class*='variant="ghost"']:hover:not(:disabled) {
   background: hsl(var(--accent)) !important;
-  border-color: transparent;
 }
 
 button[class*="variant-link"],
-button[class*="variant=\"link\""] {
+button[class*='variant="link"'] {
   border: none;
   text-decoration: underline;
   text-underline-offset: 4px;
 }
 
 button[class*="variant-link"]:hover:not(:disabled),
-button[class*="variant=\"link\""]:hover:not(:disabled) {
+button[class*='variant="link"']:hover:not(:disabled) {
   text-decoration: none;
 }
 
