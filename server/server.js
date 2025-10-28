@@ -22,7 +22,7 @@ import cookieParser from "cookie-parser";
 
 
 const app = express();
-const dist = path.join(process.cwd(), 'client', 'dist');
+const dist = path.join(process.cwd(), '..', 'client', 'dist');
 app.enable("trust proxy");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -44,11 +44,21 @@ app.use("/api/materials", materialsRoutes);
 app.use("/api/offerings", offeringsRoutes);
 app.use("/api/submissions", submissionsRoutes);
 
+// Serve static files from the client build
+app.use(express.static(dist));
+
+// SPA fallback - serve index.html for all non-API routes
+app.use((req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+  // Serve index.html for all other routes
+  res.sendFile(path.join(dist, 'index.html'));
+});
+
 app.use(notFound);
 app.use(errorHandler);
-
-// app.use(express.static(dist));
-// app.get('*', (_, res) => res.sendFile(path.join(dist, 'index.html')));
 
 const port = Number(config.PORT) || 8888;
 app.listen(port, () => {
