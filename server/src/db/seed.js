@@ -117,7 +117,7 @@ const CURRENT = [
         "https://materials.example.com/cs201/wk1-slides.pdf",
       ],
     ],
-    students: ALL_STUDENT_EMAILS,
+    students: ALL_STUDENT_EMAILS.slice(0, 28),
     assignments: [
       ["Check-in Quiz", 50],
       ["Modeling Lab 1", 50],
@@ -208,7 +208,7 @@ async function getOfferingIdByCodeTermSection(c, { code, term, section }) {
 
 async function ensureHistoricalOffering(
   c,
-  { code, term, section = "A", seats = 200 }
+  { code, term, section = "A", seats = 30 }
 ) {
   const existing = await getOfferingIdByCodeTermSection(c, {
     code,
@@ -346,12 +346,24 @@ async function enrollStudents(c, offeringId, emails) {
     if (!sid) continue;
     await q(
       c,
-      `INSERT INTO enrollments (offering_id, student_id, status, enrolled_at)
-       VALUES ($1,$2,'enrolled', now())
-       ON CONFLICT (offering_id, student_id) DO UPDATE
-         SET status='enrolled',
-             enrolled_at=COALESCE(enrollments.enrolled_at, now()),
-             updated_at=now()`,
+      `WITH caps AS (
+        SELECT co.id, co.total_seats,
+               (SELECT COUNT(*) FROM enrollments e WHERE e.offering_id=co.id AND e.status='enrolled') AS taken
+        FROM course_offering co
+        WHERE co.id = $1
+        FOR UPDATE
+      )
+      INSERT INTO enrollments (offering_id, student_id, status, enrolled_at)
+      SELECT $1, $2, 'enrolled', now()
+      FROM caps
+      WHERE caps.taken < caps.total_seats
+      ON CONFLICT (offering_id, student_id) DO UPDATE
+        SET status='enrolled',
+            enrolled_at=COALESCE(enrollments.enrolled_at, now()),
+            updated_at=now()
+      WHERE (SELECT COUNT(*) FROM enrollments e WHERE e.offering_id=$1 AND e.status='enrolled') < 
+            (SELECT total_seats FROM course_offering WHERE id=$1)
+      RETURNING id`,
       [offeringId, sid]
     );
   }
@@ -530,7 +542,7 @@ async function backfillAllPrereqHistory(c) {
         code,
         term: TARGET_PAST_TERM,
         section: HIST_SECTION,
-        seats: 200,
+        seats: 30,
       });
       section = HIST_SECTION;
     }

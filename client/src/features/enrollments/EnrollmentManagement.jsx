@@ -127,7 +127,7 @@ export default function EnrollmentManagement() {
         offeringId: selectedOfferingId,
         studentId,
       });
-      alert("✓ Student marked as completed successfully!"); // ADD THIS LINE
+      alert("✓ Student marked as completed successfully!"); 
     } catch (err) {
       const errorMsg = err?.response?.data?.message || "Complete failed";
       alert(`✗ Error: ${errorMsg}`);
@@ -374,6 +374,7 @@ export default function EnrollmentManagement() {
                             Complete
                           </Button>
                           <Button
+                            className= "bg-red-600/40"
                             variant="destructive"
                             size="sm"
                             onClick={() => handleDrop(student.student_id)}

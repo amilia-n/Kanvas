@@ -47,12 +47,13 @@ app.use("/api/submissions", submissionsRoutes);
 // Serve static files from the client build
 app.use(express.static(dist));
 
-// Catch-all route to serve index.html for client-side routing
-app.get('/*', (req, res, next) => {
+// SPA fallback - serve index.html for all non-API routes
+app.use((req, res, next) => {
   // Skip API routes
   if (req.path.startsWith('/api/')) {
     return next();
   }
+  // Serve index.html for all other routes
   res.sendFile(path.join(dist, 'index.html'));
 });
 
