@@ -2,6 +2,8 @@
 
 Kanvas is a comprehensive Learning Management System (LMS) built with React and Express, featuring course management, enrollment workflows, assignment submission, grading, and real-time student progress tracking.
 
+
+Here's the deployment: https://kanvas-app-e3tw.onrender.com/login
 ---
 Try logging in as Mr. Donald Knuth, our CS teacher!<br>
 Username: `dknu@faculty.kanvas.edu`<br>
