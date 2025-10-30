@@ -47,13 +47,21 @@ app.use("/api/submissions", submissionsRoutes);
 // Serve static files from the client build
 app.use(express.static(dist));
 
-app.get('/:path(*)', (req, res, next) => {
-  // Skip API routes
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-  res.sendFile(path.join(dist, 'index.html'));
-});
+if (process.env.NODE_ENV === "production") {
+  // Catch-all route for SPA - serve index.html for all non-API GET requests
+  app.use((req, res, next) => {
+    // Skip API routes
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    // Only handle GET requests for HTML pages
+    if (req.method === 'GET') {
+      res.sendFile(path.join(dist, 'index.html'));
+    } else {
+      next();
+    }
+  });
+}
 
 app.use(notFound);
 app.use(errorHandler);
